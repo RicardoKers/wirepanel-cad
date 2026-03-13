@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Layer } from "../models";
 
 type LayersPanelProps = {
@@ -21,10 +22,12 @@ export default function LayersPanel({
   onToggleLayerLock,
   onRenameLayer
 }: LayersPanelProps) {
+  const { t } = useTranslation();
+
   return (
     <section className="panel">
       <header className="panel-header">
-        <h3>Layers</h3>
+        <h3>{t("layers.title")}</h3>
         <button className="icon-button" onClick={onAddLayer}>+</button>
       </header>
       <div className="panel-body">
@@ -46,20 +49,20 @@ export default function LayersPanel({
                 className={layer.visible ? "chip" : "chip muted"}
                 onClick={() => onToggleLayerVisibility(layer.id)}
               >
-                {layer.visible ? "Show" : "Hide"}
+                {layer.visible ? t("layers.show") : t("layers.hide")}
               </button>
               <button
                 className={layer.locked ? "chip muted" : "chip"}
                 onClick={() => onToggleLayerLock(layer.id)}
               >
-                {layer.locked ? "Lock" : "Edit"}
+                {layer.locked ? t("layers.lock") : t("layers.edit")}
               </button>
               <button
                 className={layers.length <= 1 ? "chip muted" : "chip danger"}
                 onClick={() => onDeleteLayer(layer.id)}
                 disabled={layers.length <= 1}
               >
-                Del
+                {t("layers.deleteShort")}
               </button>
             </div>
           </div>

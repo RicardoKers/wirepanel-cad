@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { useTranslation } from "react-i18next";
 import type { Layer, LineStyle, PdfSettings, Point, Shape, Tool, ViewState } from "../models";
 import { angleBetween, arcToPath, distance, getShapeBounds, normalizeAngle } from "../utils/geometry";
 import { replacePlaceholders } from "../utils/text";
@@ -44,6 +45,7 @@ type CanvasViewProps = {
   gridColor: string;
   showPinConnection: boolean;
   shouldAutoFit: boolean;
+  fitToPageRequest: number;
   pageIndex: number;
   totalPages: number;
   pageId: string;
@@ -210,6 +212,7 @@ export default function CanvasView({
   gridColor,
   showPinConnection,
   shouldAutoFit,
+  fitToPageRequest,
   pageIndex,
   totalPages,
   pageId,
@@ -240,6 +243,7 @@ export default function CanvasView({
   onUndo,
   onRedo
 }: CanvasViewProps) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [draft, setDraft] = useState<Shape | null>(null);
@@ -254,6 +258,7 @@ export default function CanvasView({
   const panStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const lastPointerRef = useRef<Point>(emptyPoint);
   const tagDragRef = useRef<{ id: string; last: Point } | null>(null);
+  const lastFitToPageRequestRef = useRef(0);
   const endpointDragRef = useRef<{
     id: string;
     endpoint: "start" | "end";
@@ -654,7 +659,7 @@ export default function CanvasView({
         lineStyle: defaultLineStyle,
         x: world.x,
         y: world.y,
-        text: "Text",
+        text: t("app.newText"),
         fontSize: 14,
         fontFamily: "Space Grotesk",
         linkEnabled: false,
@@ -675,7 +680,7 @@ export default function CanvasView({
         lineStyle: defaultLineStyle,
         x: world.x,
         y: world.y,
-        tag: "Pin",
+        tag: t("app.newPin"),
         tagX: world.x,
         tagY: world.y,
         tagFontSize: 4
@@ -1144,8 +1149,7 @@ export default function CanvasView({
     showMarkers
   } = layout;
 
-  useEffect(() => {
-    if (!shouldAutoFit) return;
+  function fitViewToPage() {
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -1158,7 +1162,19 @@ export default function CanvasView({
     const offsetX = (rect.width - pageWidth * nextScale) / 2;
     const offsetY = (rect.height - pageHeight * nextScale) / 2;
     onViewChange({ scale: nextScale, offsetX, offsetY });
+  }
+
+  useEffect(() => {
+    if (!shouldAutoFit) return;
+    fitViewToPage();
   }, [onViewChange, pageHeight, pageWidth, shouldAutoFit]);
+
+  useEffect(() => {
+    if (fitToPageRequest === 0) return;
+    if (fitToPageRequest === lastFitToPageRequestRef.current) return;
+    lastFitToPageRequestRef.current = fitToPageRequest;
+    fitViewToPage();
+  }, [fitToPageRequest, onViewChange, pageHeight, pageWidth]);
 
   useEffect(() => {
     if (!navigateTarget || navigateTarget.pageId !== pageId) return;
@@ -1193,7 +1209,7 @@ export default function CanvasView({
     if (diameter === null || diameter === undefined || !Number.isFinite(diameter ?? NaN)) {
       return String(number);
     }
-    return `${number} - ${diameter}mm2`;
+    return `${number} - ${diameter}mm²`;
   };
 
   const getPotentialArrowSegments = (
@@ -1964,6 +1980,11 @@ export default function CanvasView({
     </div>
   );
 }
+
+
+
+
+
 
 
 

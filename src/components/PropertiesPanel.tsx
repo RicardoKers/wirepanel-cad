@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Layer, Shape } from "../models";
 import { getShapeBounds, translateShape } from "../utils/geometry";
 
@@ -40,6 +41,7 @@ export default function PropertiesPanel({
   onMirrorSelection,
   activeLayer
 }: PropertiesPanelProps) {
+  const { t } = useTranslation();
   const [moveX, setMoveX] = useState(0);
   const [moveY, setMoveY] = useState(0);
   const lineStyle = selectedShape?.lineStyle ?? "solid";
@@ -64,11 +66,11 @@ export default function PropertiesPanel({
     return (
       <section className="panel">
         <header className="panel-header">
-          <h3>Properties</h3>
+          <h3>{t("properties.title")}</h3>
         </header>
         <div className="panel-body">
-          <p className="muted">Select an object to edit properties.</p>
-          {activeLayer && <p className="muted small">Active layer: {activeLayer.name}</p>}
+          <p className="muted">{t("properties.empty")}</p>
+          {activeLayer && <p className="muted small">{t("properties.activeLayer", { name: activeLayer.name })}</p>}
         </div>
       </section>
     );
@@ -77,31 +79,31 @@ export default function PropertiesPanel({
   return (
     <section className="panel properties-panel">
       <header className="panel-header">
-        <h3>Properties</h3>
+        <h3>{t("properties.title")}</h3>
       </header>
       <div className="panel-body properties-body">
-        <button className="tool-button danger" onClick={onDeleteSelection}>Delete</button>
+        <button className="tool-button danger" onClick={onDeleteSelection}>{t("properties.delete")}</button>
         {selectionCount > 0 && (
           <>
             <div className="align-grid">
-              <button className="chip" onClick={() => onRotateSelection(-15)}>Rotate -15°</button>
-              <button className="chip" onClick={() => onRotateSelection(15)}>Rotate +15°</button>
-              <button className="chip" onClick={() => onMirrorSelection("horizontal")}>Mirror Horizontal</button>
-              <button className="chip" onClick={() => onMirrorSelection("vertical")}>Mirror Vertical</button>
+              <button className="chip" onClick={() => onRotateSelection(-15)}>{t("properties.rotateMinus15")}</button>
+              <button className="chip" onClick={() => onRotateSelection(15)}>{t("properties.rotatePlus15")}</button>
+              <button className="chip" onClick={() => onMirrorSelection("horizontal")}>{t("properties.mirrorHorizontal")}</button>
+              <button className="chip" onClick={() => onMirrorSelection("vertical")}>{t("properties.mirrorVertical")}</button>
             </div>
             {selectionCount > 1 && (
               <div className="align-grid">
-                <button className="chip" onClick={() => onAlignSelection("left")}>Align Left</button>
-                <button className="chip" onClick={() => onAlignSelection("centerX")}>Align Center X</button>
-                <button className="chip" onClick={() => onAlignSelection("right")}>Align Right</button>
-                <button className="chip" onClick={() => onAlignSelection("top")}>Align Top</button>
-                <button className="chip" onClick={() => onAlignSelection("centerY")}>Align Center Y</button>
-                <button className="chip" onClick={() => onAlignSelection("bottom")}>Align Bottom</button>
+                <button className="chip" onClick={() => onAlignSelection("left")}>{t("properties.alignLeft")}</button>
+                <button className="chip" onClick={() => onAlignSelection("centerX")}>{t("properties.alignCenterX")}</button>
+                <button className="chip" onClick={() => onAlignSelection("right")}>{t("properties.alignRight")}</button>
+                <button className="chip" onClick={() => onAlignSelection("top")}>{t("properties.alignTop")}</button>
+                <button className="chip" onClick={() => onAlignSelection("centerY")}>{t("properties.alignCenterY")}</button>
+                <button className="chip" onClick={() => onAlignSelection("bottom")}>{t("properties.alignBottom")}</button>
               </div>
             )}
             <div className="move-grid">
               <label className="row">
-                Move X
+                {t("properties.moveX")}
                 <input
                   type="number"
                   value={moveX}
@@ -109,7 +111,7 @@ export default function PropertiesPanel({
                 />
               </label>
               <label className="row">
-                Move Y
+                {t("properties.moveY")}
                 <input
                   type="number"
                   value={moveY}
@@ -120,14 +122,14 @@ export default function PropertiesPanel({
                 className="tool-button"
                 onClick={() => onMoveSelection(moveX, moveY)}
               >
-                Apply Move
+                {t("properties.applyMove")}
               </button>
             </div>
           </>
         )}
         {selectedShape && (
           <label className="row">
-            Layer
+            {t("properties.layer")}
             <select
               value={selectedLayerId}
               onChange={(event) =>
@@ -142,170 +144,170 @@ export default function PropertiesPanel({
             </select>
           </label>
         )}
-          {selectedShape && selectedShape.type !== "group" && (
-            <>
+        {selectedShape && selectedShape.type !== "group" && (
+          <>
+            <label className="row">
+              {t("properties.line")}
+              <input
+                type="color"
+                value={selectedShape.lineColor}
+                onChange={(event) =>
+                  selectedShape.type === "potential"
+                    ? onUpdatePotentialShared(selectedShape.id, { lineColor: event.target.value })
+                    : onUpdateShape(selectedShape.id, (shape) => ({ ...shape, lineColor: event.target.value }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.lineWidth")}
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={selectedShape.lineWidth}
+                onChange={(event) =>
+                  selectedShape.type === "potential"
+                    ? onUpdatePotentialShared(selectedShape.id, { lineWidth: Number(event.target.value) || 1 })
+                    : onUpdateShape(selectedShape.id, (shape) => ({ ...shape, lineWidth: Number(event.target.value) || 1 }))
+                }
+              />
+            </label>
+            {(selectedShape.type === "line" ||
+              selectedShape.type === "circle" ||
+              selectedShape.type === "arc" ||
+              selectedShape.type === "potential") && (
               <label className="row">
-                Line
-                <input
-                  type="color"
-                  value={selectedShape.lineColor}
+                {t("properties.lineStyle")}
+                <select
+                  value={lineStyle}
                   onChange={(event) =>
                     selectedShape.type === "potential"
-                      ? onUpdatePotentialShared(selectedShape.id, { lineColor: event.target.value })
-                      : onUpdateShape(selectedShape.id, (shape) => ({ ...shape, lineColor: event.target.value }))
+                      ? onUpdatePotentialShared(selectedShape.id, {
+                        lineStyle: event.target.value as "solid" | "dashed" | "dotted"
+                      })
+                      : onUpdateShape(selectedShape.id, (shape) => ({
+                        ...shape,
+                        lineStyle: event.target.value as "solid" | "dashed" | "dotted"
+                      }))
                   }
-                />
+                >
+                  <option value="solid">{t("properties.continuous")}</option>
+                  <option value="dashed">{t("properties.dashed")}</option>
+                  <option value="dotted">{t("properties.dotted")}</option>
+                </select>
               </label>
-              <label className="row">
-                Line width
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={selectedShape.lineWidth}
-                  onChange={(event) =>
-                    selectedShape.type === "potential"
-                      ? onUpdatePotentialShared(selectedShape.id, { lineWidth: Number(event.target.value) || 1 })
-                      : onUpdateShape(selectedShape.id, (shape) => ({ ...shape, lineWidth: Number(event.target.value) || 1 }))
-                  }
-                />
-              </label>
-              {(selectedShape.type === "line" ||
-                selectedShape.type === "circle" ||
-                selectedShape.type === "arc" ||
-                selectedShape.type === "potential") && (
+            )}
+            {selectedShape.type === "potential" && (
+              <>
                 <label className="row">
-                  Line style
-                  <select
-                    value={lineStyle}
-                    onChange={(event) =>
-                      selectedShape.type === "potential"
-                        ? onUpdatePotentialShared(selectedShape.id, {
-                          lineStyle: event.target.value as "solid" | "dashed" | "dotted"
-                        })
-                        : onUpdateShape(selectedShape.id, (shape) => ({
-                          ...shape,
-                          lineStyle: event.target.value as "solid" | "dashed" | "dotted"
-                        }))
-                    }
-                  >
-                    <option value="solid">Continuous</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
+                  {t("properties.number")}
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={selectedShape.potentialNumber}
+                    onChange={(event) => {
+                      const nextNumber = Number(event.target.value);
+                      if (!Number.isFinite(nextNumber) || nextNumber < 1) return;
+                      onUpdatePotentialNumber(selectedShape.id, nextNumber);
+                    }}
+                  />
                 </label>
-              )}
-              {selectedShape.type === "potential" && (
-                <>
-                  <label className="row">
-                    Number
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={selectedShape.potentialNumber}
-                      onChange={(event) => {
-                        const nextNumber = Number(event.target.value);
-                        if (!Number.isFinite(nextNumber) || nextNumber < 1) return;
-                        onUpdatePotentialNumber(selectedShape.id, nextNumber);
-                      }}
-                    />
-                  </label>
-                  <label className="row">
-                    Name
-                    <input
-                      type="text"
-                      value={selectedShape.potentialName ?? ""}
-                      onChange={(event) =>
-                        onUpdatePotentialShared(selectedShape.id, { potentialName: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="row">
-                    Diameter (mm2)
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={selectedShape.potentialDiameter ?? ""}
-                      onChange={(event) => {
-                        const rawValue = event.target.value;
-                        const nextDiameter = rawValue === "" ? null : Number(rawValue);
-                        onUpdatePotentialShared(selectedShape.id, {
-                          potentialDiameter:
-                            typeof nextDiameter === "number" && Number.isFinite(nextDiameter)
-                              ? nextDiameter
-                              : null
-                        });
-                      }}
-                    />
-                  </label>
-                </>
-              )}
-              {(selectedShape.type === "line" || selectedShape.type === "potential") && (
-                <>
-                <label className="row">X1<input type="number" value={selectedShape.x1} onChange={(event) =>
+                <label className="row">
+                  {t("properties.name")}
+                  <input
+                    type="text"
+                    value={selectedShape.potentialName ?? ""}
+                    onChange={(event) =>
+                      onUpdatePotentialShared(selectedShape.id, { potentialName: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.diameterMm2")}
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={selectedShape.potentialDiameter ?? ""}
+                    onChange={(event) => {
+                      const rawValue = event.target.value;
+                      const nextDiameter = rawValue === "" ? null : Number(rawValue);
+                      onUpdatePotentialShared(selectedShape.id, {
+                        potentialDiameter:
+                          typeof nextDiameter === "number" && Number.isFinite(nextDiameter)
+                            ? nextDiameter
+                            : null
+                      });
+                    }}
+                  />
+                </label>
+              </>
+            )}
+            {(selectedShape.type === "line" || selectedShape.type === "potential") && (
+              <>
+                <label className="row">{t("properties.x1")}<input type="number" value={selectedShape.x1} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x1: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Y1<input type="number" value={selectedShape.y1} onChange={(event) =>
+                <label className="row">{t("properties.y1")}<input type="number" value={selectedShape.y1} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y1: Number(event.target.value) }))
                 } /></label>
-                <label className="row">X2<input type="number" value={selectedShape.x2} onChange={(event) =>
+                <label className="row">{t("properties.x2")}<input type="number" value={selectedShape.x2} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x2: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Y2<input type="number" value={selectedShape.y2} onChange={(event) =>
+                <label className="row">{t("properties.y2")}<input type="number" value={selectedShape.y2} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y2: Number(event.target.value) }))
                 } /></label>
               </>
             )}
             {selectedShape.type === "circle" && (
               <>
-                <label className="row">CX<input type="number" value={selectedShape.cx} onChange={(event) =>
+                <label className="row">{t("properties.cx")}<input type="number" value={selectedShape.cx} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cx: Number(event.target.value) }))
                 } /></label>
-                <label className="row">CY<input type="number" value={selectedShape.cy} onChange={(event) =>
+                <label className="row">{t("properties.cy")}<input type="number" value={selectedShape.cy} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cy: Number(event.target.value) }))
                 } /></label>
-                <label className="row">R<input type="number" value={selectedShape.r} onChange={(event) =>
+                <label className="row">{t("properties.r")}<input type="number" value={selectedShape.r} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, r: Number(event.target.value) }))
                 } /></label>
               </>
             )}
             {selectedShape.type === "arc" && (
               <>
-                <label className="row">CX<input type="number" value={selectedShape.cx} onChange={(event) =>
+                <label className="row">{t("properties.cx")}<input type="number" value={selectedShape.cx} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cx: Number(event.target.value) }))
                 } /></label>
-                <label className="row">CY<input type="number" value={selectedShape.cy} onChange={(event) =>
+                <label className="row">{t("properties.cy")}<input type="number" value={selectedShape.cy} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cy: Number(event.target.value) }))
                 } /></label>
-                <label className="row">R<input type="number" value={selectedShape.r} onChange={(event) =>
+                <label className="row">{t("properties.r")}<input type="number" value={selectedShape.r} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, r: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Start<input type="number" value={selectedShape.startAngle} onChange={(event) =>
+                <label className="row">{t("properties.start")}<input type="number" value={selectedShape.startAngle} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, startAngle: Number(event.target.value) }))
                 } /></label>
-                <label className="row">End<input type="number" value={selectedShape.endAngle} onChange={(event) =>
+                <label className="row">{t("properties.end")}<input type="number" value={selectedShape.endAngle} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, endAngle: Number(event.target.value) }))
                 } /></label>
               </>
             )}
             {selectedShape.type === "text" && (
               <>
-                <label className="row">X<input type="number" value={selectedShape.x} onChange={(event) =>
+                <label className="row">{t("properties.x")}<input type="number" value={selectedShape.x} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Y<input type="number" value={selectedShape.y} onChange={(event) =>
+                <label className="row">{t("properties.y")}<input type="number" value={selectedShape.y} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Text<input type="text" value={selectedShape.text} onChange={(event) =>
+                <label className="row">{t("properties.text")}<input type="text" value={selectedShape.text} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, text: event.target.value }))
                 } /></label>
-                <label className="row">Size<input type="number" value={selectedShape.fontSize} onChange={(event) =>
+                <label className="row">{t("properties.size")}<input type="number" value={selectedShape.fontSize} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, fontSize: Number(event.target.value) || 12 }))
                 } /></label>
                 <label className="row">
-                  Link
+                  {t("properties.link")}
                   <input
                     type="checkbox"
                     checked={Boolean(selectedShape.linkEnabled)}
@@ -315,7 +317,7 @@ export default function PropertiesPanel({
                   />
                 </label>
                 <label className="row">
-                  Target
+                  {t("properties.target")}
                   <input
                     type="text"
                     value={selectedShape.linkTarget ?? ""}
@@ -328,22 +330,22 @@ export default function PropertiesPanel({
             )}
             {selectedShape.type === "pin" && (
               <>
-                <label className="row">Pin X<input type="number" value={selectedShape.x} onChange={(event) =>
+                <label className="row">{t("properties.pinX")}<input type="number" value={selectedShape.x} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Pin Y<input type="number" value={selectedShape.y} onChange={(event) =>
+                <label className="row">{t("properties.pinY")}<input type="number" value={selectedShape.y} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Tag<input type="text" value={selectedShape.tag} onChange={(event) =>
+                <label className="row">{t("properties.tag")}<input type="text" value={selectedShape.tag} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tag: event.target.value }))
                 } /></label>
-                <label className="row">Tag X<input type="number" value={selectedShape.tagX} onChange={(event) =>
+                <label className="row">{t("properties.tagX")}<input type="number" value={selectedShape.tagX} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagX: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Tag Y<input type="number" value={selectedShape.tagY} onChange={(event) =>
+                <label className="row">{t("properties.tagY")}<input type="number" value={selectedShape.tagY} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagY: Number(event.target.value) }))
                 } /></label>
-                <label className="row">Tag size<input type="number" value={selectedShape.tagFontSize} onChange={(event) =>
+                <label className="row">{t("properties.tagSize")}<input type="number" value={selectedShape.tagFontSize} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagFontSize: Number(event.target.value) || 4 }))
                 } /></label>
               </>
@@ -353,7 +355,7 @@ export default function PropertiesPanel({
         {selectedShape && selectedShape.type === "group" && groupOrigin && (
           <>
             <label className="row">
-              Origin X
+              {t("properties.originX")}
               <input
                 type="number"
                 value={groupOrigin.minX}
@@ -367,7 +369,7 @@ export default function PropertiesPanel({
               />
             </label>
             <label className="row">
-              Origin Y
+              {t("properties.originY")}
               <input
                 type="number"
                 value={groupOrigin.minY}

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manual do CAD 2D</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1016;
+        --panel: #121a23;
+        --panel-2: #182433;
+        --text: #e8eef7;
+        --muted: #9fb2cc;
+        --accent: #33b1ff;
+        --border: #223247;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: linear-gradient(180deg, #0b1016 0%, #101722 100%);
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      code {
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.35rem;
+        background: rgba(51, 177, 255, 0.12);
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      .layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+
+      .hero,
+      .section {
+        background: rgba(18, 26, 35, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      .hero {
+        margin-bottom: 1rem;
+      }
+
+      .section + .section {
+        margin-top: 1rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin-top: 0;
+        line-height: 1.2;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        margin-bottom: 0.75rem;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.5rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0;
+        padding-left: 1.25rem;
+      }
+
+      .top-links {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      .top-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.5rem 0.9rem;
+        background: rgba(24, 36, 51, 0.85);
+        text-decoration: none;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .card {
+        background: rgba(24, 36, 51, 0.8);
+        border: 1px solid var(--border);
+        border-radius: 0.8rem;
+        padding: 1rem;
+      }
+
+      .kbd {
+        display: inline-block;
+        min-width: 1.8rem;
+        padding: 0.12rem 0.45rem;
+        border: 1px solid #41546d;
+        border-radius: 0.4rem;
+        background: #0f1620;
+        color: var(--text);
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.92rem;
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.75rem;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.75rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: rgba(24, 36, 51, 0.9);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="hero">
+        <h1>Manual do CAD 2D para Projetos Elétricos</h1>
+        <p>
+          Este manual reúne o fluxo principal da aplicação, as ferramentas de desenho, edição,
+          potenciais, componentes, exportação de projeto e geração de PDF.
+        </p>
+        <div class="top-links">
+          <a href="./manual.en.html">English Manual</a>
+          <a href="#atalhos">Atalhos</a>
+          <a href="#componentes">Componentes</a>
+          <a href="#textos">Textos e Links</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Visão geral da interface</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Barra superior</h3>
+            <p>Contém as ferramentas de desenho e as ações globais do projeto.</p>
+            <ul>
+              <li><strong>Select</strong>: selecionar, mover, redimensionar e editar objetos.</li>
+              <li><strong>Line</strong>: desenhar linhas comuns.</li>
+              <li><strong>Potential</strong>: desenhar potenciais elétricos.</li>
+              <li><strong>Circle</strong> e <strong>Arc</strong>: desenhar geometrias circulares.</li>
+              <li><strong>Text</strong>: inserir textos livres ou especiais.</li>
+              <li><strong>Pin</strong>: inserir pinos de conexão.</li>
+              <li><strong>Pan</strong>: navegar pelo canvas sem editar.</li>
+              <li><strong>Ajustar a página</strong>: enquadrar a folha no zoom atual.</li>
+              <li><strong>Baixar Projeto</strong> e <strong>Carregar Projeto</strong>: salvar e abrir arquivos JSON do projeto.</li>
+              <li><strong>Ajuda</strong>: abrir este manual.</li>
+              <li><strong>Exportar PDF</strong>: gerar um PDF com as folhas do desenho.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Canvas central</h3>
+            <p>
+              É a área de desenho. A folha aparece dentro de uma área maior, permitindo zoom,
+              pan, seleção por clique e arraste, além de posicionamento com snap.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Painel esquerdo</h3>
+            <p>
+              Exibe os componentes disponíveis, separados entre <strong>Biblioteca do App</strong>
+              e <strong>Componentes do Projeto</strong>.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Painel direito</h3>
+            <p>Reúne as abas <strong>Propriedades</strong>, <strong>Potenciais</strong>, <strong>Camadas</strong> e <strong>Configurações</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Desenho e edição básica</h2>
+        <ol>
+          <li>Escolha uma ferramenta na barra superior.</li>
+          <li>Clique no canvas para iniciar o objeto.</li>
+          <li>Use o segundo clique para concluir linhas, potenciais e arcos.</li>
+          <li>Volte para <strong>Select</strong> para mover, editar ou selecionar múltiplos objetos.</li>
+        </ol>
+        <p>
+          A seleção múltipla pode ser feita por caixa de seleção. Ao segurar <code>Alt</code>, a seleção
+          passa a usar contenção em vez de simples interseção.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Camadas</h2>
+        <p>
+          A aba <strong>Camadas</strong> permite organizar o desenho em diferentes níveis lógicos.
+        </p>
+        <ul>
+          <li>Criar novas camadas.</li>
+          <li>Renomear camadas existentes.</li>
+          <li>Mostrar ou ocultar uma camada.</li>
+          <li>Travar uma camada para impedir edição.</li>
+          <li>Definir a camada ativa para novos elementos.</li>
+          <li>Excluir camadas adicionais quando não forem mais necessárias.</li>
+        </ul>
+        <p>
+          Objetos selecionados também podem ser movidos entre camadas pelo menu de contexto da seleção.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Potenciais</h2>
+        <p>
+          Potenciais são linhas especiais para representar conexões elétricas. Cada potencial possui
+          número, nome e bitola em <code>mm²</code>.
+        </p>
+        <ul>
+          <li>Ao desenhar, o potencial pode se conectar automaticamente a pinos e a outros potenciais.</li>
+          <li>Se a ponta encostar em outro potencial com o mesmo número, a conexão é criada.</li>
+          <li>Isso vale tanto durante o desenho quanto ao arrastar uma linha ou uma de suas pontas.</li>
+          <li>A aba <strong>Potenciais</strong> lista os potenciais da folha atual e permite <strong>Renumerar</strong>.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="textos">
+        <h2>Textos, links e textos especiais</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Texto normal</h3>
+            <p>
+              Um texto comum pode ter conteúdo livre, tamanho de fonte e posição ajustada no painel
+              de propriedades.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Texto com link</h3>
+            <p>
+              Ative a propriedade <strong>Link</strong> e preencha <strong>Destino</strong>. A navegação
+              acontece com <strong>Ctrl + clique</strong> no Windows/Linux ou <strong>Cmd + clique</strong>
+              no macOS.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Textos especiais</h3>
+            <p>Os placeholders abaixo são substituídos automaticamente na tela e no PDF:</p>
+            <ul>
+              <li><code>&lt;project&gt;</code>: nome do projeto</li>
+              <li><code>&lt;drawing&gt;</code>: nome do desenho</li>
+              <li><code>&lt;author&gt;</code>: autor</li>
+              <li><code>&lt;page&gt;</code>: número da folha atual</li>
+              <li><code>&lt;n_pages&gt;</code>: total de folhas</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="componentes">
+        <h2>Componentes</h2>
+        <p>
+          A aplicação trabalha com dois tipos de componentes.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Uso</th>
+              <th>Onde fica salvo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Biblioteca do App</td>
+              <td>Componentes nativos distribuídos com a aplicação.</td>
+              <td>Arquivos JSON em <code>src/library/components</code> antes do build.</td>
+            </tr>
+            <tr>
+              <td>Componentes do Projeto</td>
+              <td>Componentes criados dentro do desenho atual.</td>
+              <td>No JSON do próprio projeto.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Criar um componente do projeto</h3>
+        <ol>
+          <li>Desenhe os elementos no canvas.</li>
+          <li>Selecione os objetos desejados.</li>
+          <li>Clique em <strong>Salvar no Projeto</strong>.</li>
+        </ol>
+
+        <h3>Inserir um componente</h3>
+        <p>
+          Clique no componente e depois clique no canvas, ou arraste o componente até a posição desejada.
+          O posicionamento respeita a grade e os offsets internos do símbolo.
+        </p>
+
+        <h3>Gerar JSON para a biblioteca do app</h3>
+        <ol>
+          <li>Salve o símbolo como componente do projeto.</li>
+          <li>Clique em <strong>Baixar JSON</strong>.</li>
+          <li>Escolha um nome de arquivo e uma categoria.</li>
+          <li>O navegador fará o download do arquivo JSON.</li>
+          <li>Depois, copie o arquivo para <code>src/library/components</code> no repositório.</li>
+          <li>Recompile a aplicação para incluir esse componente na biblioteca nativa.</li>
+        </ol>
+        <p>
+          As categorias da biblioteca do app podem ser recolhidas ou expandidas para facilitar a busca.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Salvar, carregar e exportar</h2>
+        <ul>
+          <li><strong>Baixar Projeto</strong>: gera um arquivo JSON com folhas, camadas e componentes do projeto.</li>
+          <li><strong>Carregar Projeto</strong>: abre um arquivo JSON no formato atual do aplicativo.</li>
+          <li><strong>Exportar PDF</strong>: gera o documento final usando as configurações da aba <strong>Configurações</strong>.</li>
+        </ul>
+        <p>
+          O formato atual do projeto é estrito. Arquivos antigos ou parciais fora do schema atual não são aceitos.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Configurações</h2>
+        <ul>
+          <li><strong>Idioma</strong>: alterna entre português do Brasil e inglês.</li>
+          <li><strong>PDF</strong>: nome do projeto, desenho, autor, folha, orientação e margens.</li>
+          <li><strong>Grade</strong>: habilitar snap, definir tamanho e cor.</li>
+          <li><strong>Pinos</strong>: mostrar ou ocultar o X de conexão.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="atalhos">
+        <h2>Atalhos de teclado</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Atalho</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Desfazer</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td><td>Refazer</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td><td>Copiar seleção</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Recortar seleção</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td><td>Colar</td></tr>
+            <tr><td><span class="kbd">Delete</span> ou <span class="kbd">Backspace</span></td><td>Excluir seleção</td></tr>
+            <tr><td><span class="kbd">Esc</span></td><td>Cancelar ação atual ou sair do modo de inserção</td></tr>
+            <tr><td>Setas do teclado</td><td>Mover a seleção pelo passo da grade ou por 1 unidade</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section">
+        <h2>Dicas práticas</h2>
+        <ul>
+          <li>Use <strong>Ajustar a página</strong> depois de um zoom intenso para voltar rapidamente ao enquadramento da folha.</li>
+          <li>Defina bem as camadas antes de começar bibliotecas grandes de componentes.</li>
+          <li>Para símbolos reutilizáveis, prefira criar como componente do projeto e depois baixar o JSON para a biblioteca do app.</li>
+          <li>Para carimbos e legendas, combine textos normais com placeholders especiais.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

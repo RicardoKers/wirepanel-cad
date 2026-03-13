@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Layer, PdfSettings, Shape } from "../models";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -52,12 +53,7 @@ type PotentialSharedChanges = {
 
 type TabId = "properties" | "potentials" | "layers" | "settings";
 
-const tabs: { id: TabId; label: string }[] = [
-  { id: "properties", label: "Properties" },
-  { id: "potentials", label: "Potentials" },
-  { id: "layers", label: "Layers" },
-  { id: "settings", label: "Settings" }
-];
+const tabs: TabId[] = ["properties", "potentials", "layers", "settings"];
 
 export default function RightPanel({
   selectedShape,
@@ -93,21 +89,22 @@ export default function RightPanel({
   showPinConnection,
   onShowPinConnectionChange
 }: RightPanelProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("properties");
 
   return (
     <aside className="right-panel">
-      <div className="tab-bar" role="tablist" aria-label="Inspector tabs">
+      <div className="tab-bar" role="tablist" aria-label={t("rightPanel.tabsAriaLabel")}>
         {tabs.map((tab) => (
           <button
-            key={tab.id}
+            key={tab}
             type="button"
             role="tab"
-            aria-selected={activeTab === tab.id}
-            className={activeTab === tab.id ? "tab-button active" : "tab-button"}
-            onClick={() => setActiveTab(tab.id)}
+            aria-selected={activeTab === tab}
+            className={activeTab === tab ? "tab-button active" : "tab-button"}
+            onClick={() => setActiveTab(tab)}
           >
-            {tab.label}
+            {t(`rightPanel.tabs.${tab}`)}
           </button>
         ))}
       </div>

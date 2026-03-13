@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2D CAD Manual</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1016;
+        --panel: #121a23;
+        --panel-2: #182433;
+        --text: #e8eef7;
+        --muted: #9fb2cc;
+        --accent: #33b1ff;
+        --border: #223247;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background: linear-gradient(180deg, #0b1016 0%, #101722 100%);
+        color: var(--text);
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      code {
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.35rem;
+        background: rgba(51, 177, 255, 0.12);
+        font-family: Consolas, "Courier New", monospace;
+      }
+
+      .layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+
+      .hero,
+      .section {
+        background: rgba(18, 26, 35, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      .hero {
+        margin-bottom: 1rem;
+      }
+
+      .section + .section {
+        margin-top: 1rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin-top: 0;
+        line-height: 1.2;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      h2 {
+        font-size: 1.35rem;
+        margin-bottom: 0.75rem;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.5rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+      }
+
+      ul,
+      ol {
+        margin: 0.5rem 0 0;
+        padding-left: 1.25rem;
+      }
+
+      .top-links {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+      }
+
+      .top-links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.5rem 0.9rem;
+        background: rgba(24, 36, 51, 0.85);
+        text-decoration: none;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .card {
+        background: rgba(24, 36, 51, 0.8);
+        border: 1px solid var(--border);
+        border-radius: 0.8rem;
+        padding: 1rem;
+      }
+
+      .kbd {
+        display: inline-block;
+        min-width: 1.8rem;
+        padding: 0.12rem 0.45rem;
+        border: 1px solid #41546d;
+        border-radius: 0.4rem;
+        background: #0f1620;
+        color: var(--text);
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.92rem;
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.75rem;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.75rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: rgba(24, 36, 51, 0.9);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="hero">
+        <h1>2D CAD User Manual</h1>
+        <p>
+          This manual covers the main workflow of the application, including drawing tools,
+          editing, potentials, components, project export and PDF generation.
+        </p>
+        <div class="top-links">
+          <a href="./manual.pt-BR.html">Manual em Português</a>
+          <a href="#shortcuts">Shortcuts</a>
+          <a href="#components">Components</a>
+          <a href="#text">Text and Links</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Interface overview</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Top toolbar</h3>
+            <p>Contains drawing tools and global project actions.</p>
+            <ul>
+              <li><strong>Select</strong>: select, move, resize and edit objects.</li>
+              <li><strong>Line</strong>: draw regular lines.</li>
+              <li><strong>Potential</strong>: draw electrical potentials.</li>
+              <li><strong>Circle</strong> and <strong>Arc</strong>: draw circular geometry.</li>
+              <li><strong>Text</strong>: insert free or special text.</li>
+              <li><strong>Pin</strong>: insert connection pins.</li>
+              <li><strong>Pan</strong>: navigate the canvas without editing.</li>
+              <li><strong>Fit to Page</strong>: frame the current sheet in view.</li>
+              <li><strong>Download Project</strong> and <strong>Upload Project</strong>: save and open project JSON files.</li>
+              <li><strong>Help</strong>: open this manual.</li>
+              <li><strong>Export PDF</strong>: generate the final PDF document.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Center canvas</h3>
+            <p>
+              This is the drawing area. The sheet is displayed inside a larger viewport, allowing zoom,
+              pan, click selection, marquee selection and snap-based placement.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Left panel</h3>
+            <p>
+              Shows available components, split between <strong>App Library</strong> and
+              <strong> Project Components</strong>.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Right panel</h3>
+            <p>Contains the <strong>Properties</strong>, <strong>Potentials</strong>, <strong>Layers</strong> and <strong>Settings</strong> tabs.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Basic drawing and editing</h2>
+        <ol>
+          <li>Choose a tool in the top toolbar.</li>
+          <li>Click on the canvas to start the object.</li>
+          <li>Use the second click to finish lines, potentials and arcs.</li>
+          <li>Switch back to <strong>Select</strong> to move, edit or multi-select objects.</li>
+        </ol>
+        <p>
+          Multi-selection can be done with a selection box. Hold <code>Alt</code> to use containment
+          instead of simple intersection.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Layers</h2>
+        <p>
+          The <strong>Layers</strong> tab organizes the drawing into logical levels.
+        </p>
+        <ul>
+          <li>Create new layers.</li>
+          <li>Rename existing layers.</li>
+          <li>Show or hide a layer.</li>
+          <li>Lock a layer to prevent editing.</li>
+          <li>Set the active layer for newly created objects.</li>
+          <li>Delete extra layers when they are no longer needed.</li>
+        </ul>
+        <p>
+          Selected objects can also be moved to another layer through the selection context menu.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Potentials</h2>
+        <p>
+          Potentials are special lines used to represent electrical connections. Each potential has
+          a number, name and wire size in <code>mm²</code>.
+        </p>
+        <ul>
+          <li>While drawing, a potential can snap and connect to pins and other potentials.</li>
+          <li>If an endpoint touches another potential with the same number, a connection is created.</li>
+          <li>This also works when dragging the line or dragging one of its endpoints.</li>
+          <li>The <strong>Potentials</strong> tab lists potentials on the current page and provides <strong>Renumber</strong>.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="text">
+        <h2>Text, links and special text</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Regular text</h3>
+            <p>
+              A regular text object can have free content, font size and position adjusted in the
+              properties panel.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Linked text</h3>
+            <p>
+              Enable the <strong>Link</strong> property and fill in <strong>Target</strong>. Navigation
+              happens with <strong>Ctrl + click</strong> on Windows/Linux or <strong>Cmd + click</strong>
+              on macOS.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Special text</h3>
+            <p>The placeholders below are replaced automatically on screen and in PDF export:</p>
+            <ul>
+              <li><code>&lt;project&gt;</code>: project name</li>
+              <li><code>&lt;drawing&gt;</code>: drawing name</li>
+              <li><code>&lt;author&gt;</code>: author</li>
+              <li><code>&lt;page&gt;</code>: current sheet number</li>
+              <li><code>&lt;n_pages&gt;</code>: total number of sheets</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="components">
+        <h2>Components</h2>
+        <p>
+          The application works with two kinds of components.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Usage</th>
+              <th>Where it is stored</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>App Library</td>
+              <td>Built-in components shipped with the application.</td>
+              <td>JSON files inside <code>src/library/components</code> before the build.</td>
+            </tr>
+            <tr>
+              <td>Project Components</td>
+              <td>Components created inside the current drawing.</td>
+              <td>Inside the project JSON file.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Create a project component</h3>
+        <ol>
+          <li>Draw the elements on the canvas.</li>
+          <li>Select the desired objects.</li>
+          <li>Click <strong>Save to Project</strong>.</li>
+        </ol>
+
+        <h3>Insert a component</h3>
+        <p>
+          Click the component and then click on the canvas, or drag it to the desired position.
+          Placement respects the grid and the symbol's internal offsets.
+        </p>
+
+        <h3>Generate JSON for the app library</h3>
+        <ol>
+          <li>Save the symbol as a project component.</li>
+          <li>Click <strong>Download JSON</strong>.</li>
+          <li>Choose a file name and a category.</li>
+          <li>The browser downloads the JSON file.</li>
+          <li>Later, copy that file into <code>src/library/components</code> in the repository.</li>
+          <li>Rebuild the application to include the component in the built-in library.</li>
+        </ol>
+        <p>
+          App library categories can be collapsed or expanded to make large libraries easier to browse.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Save, load and export</h2>
+        <ul>
+          <li><strong>Download Project</strong>: creates a JSON file with pages, layers and project components.</li>
+          <li><strong>Upload Project</strong>: opens a JSON file in the current application format.</li>
+          <li><strong>Export PDF</strong>: generates the final document using the values from the <strong>Settings</strong> tab.</li>
+        </ul>
+        <p>
+          The current project format is strict. Older or partial schemas outside the current structure are rejected.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Settings</h2>
+        <ul>
+          <li><strong>Language</strong>: switch between English and Brazilian Portuguese.</li>
+          <li><strong>PDF</strong>: project name, drawing name, author, sheet, orientation and margins.</li>
+          <li><strong>Grid</strong>: enable snap, define grid size and grid color.</li>
+          <li><strong>Pins</strong>: show or hide the connection X marker.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="shortcuts">
+        <h2>Keyboard shortcuts</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Shortcut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Undo</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td><td>Redo</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td><td>Copy selection</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Cut selection</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td><td>Paste</td></tr>
+            <tr><td><span class="kbd">Delete</span> or <span class="kbd">Backspace</span></td><td>Delete selection</td></tr>
+            <tr><td><span class="kbd">Esc</span></td><td>Cancel the current action or leave placement mode</td></tr>
+            <tr><td>Arrow keys</td><td>Move the selection by the grid step or by 1 unit</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section">
+        <h2>Practical tips</h2>
+        <ul>
+          <li>Use <strong>Fit to Page</strong> after heavy zooming to quickly frame the sheet again.</li>
+          <li>Set up layers early if you plan to build large reusable component libraries.</li>
+          <li>For reusable symbols, create them as project components first and then download the JSON for the app library.</li>
+          <li>For title blocks and captions, combine regular text with the available special placeholders.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

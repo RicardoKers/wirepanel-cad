@@ -87,9 +87,26 @@ export type Shape = LineShape | CircleShape | ArcShape | TextShape | PinShape | 
 export type Component = {
   id: string;
   name: string;
+  category: string;
+  description: string;
+  tags: string[];
   shapes: Shape[];
-  gridOffsetX?: number;
-  gridOffsetY?: number;
+  gridOffsetX: number;
+  gridOffsetY: number;
+};
+
+export type ComponentSource = "app" | "project";
+
+export type LibraryComponent = Component & {
+  source: ComponentSource;
+  readOnly: boolean;
+  fileName?: string;
+};
+
+export type AppLibraryComponentFile = {
+  schema: "basic2dcad.app-library-component";
+  version: 1;
+  component: Component;
 };
 
 export type Page = {
@@ -101,10 +118,8 @@ export type Page = {
 export type CadFile = {
   version: number;
   layers: Layer[];
-  pages?: Page[];
-  shapes?: Shape[];
-  components?: Component[];
-  groups?: Component[];
+  pages: Page[];
+  components: Component[];
 };
 
 export type ViewState = {

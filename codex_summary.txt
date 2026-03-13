@@ -2,30 +2,127 @@ Summary (updated)
 
 Project: d:\06_Temporary\Basic2DCAD\cad-web
 
-Recent work focus: potentials + pins + UI panel + renumber.
+Recent work focus: potentials + pins + UI panel + renumber + i18n.
 
 Key changes
 - Potentials can connect to pins: when drawing a potential, the cursor snaps to a nearby pin (tolerance ~0.8mm). A small green circle highlights the pin. When connected to a pin, the potential end does NOT show the edge label or arrow. Connection to other potentials still supports T-connections and junction dots.
 - Potential label visibility is driven by potentialRender in App.tsx. Endpoints connected to pins are marked not visible, so both labels and arrows are hidden on that side.
-- Potential list panel is now English: tab label “Potentials”, header “Potentials”, button “Renumber”, empty state “No potentials yet.”, and placeholders “Unnamed” / “No size”.
-- Added a “Renumber” button in the Potentials tab to renumber all potential numbers sequentially based on visual order: page order, then top-to-bottom (bounds.minY), then left-to-right (bounds.minX).
+- Added a "Renumber" button in the Potentials tab to renumber all potential numbers sequentially based on visual order: page order, then top-to-bottom (bounds.minY), then left-to-right (bounds.minX).
+- Added internationalization support with English and Brazilian Portuguese.
+- Added language selector in Settings and persisted the selected language in localStorage.
+- Main visible UI texts are now translated through i18next/react-i18next instead of being hard-coded in components.
+- Fixed Portuguese accent rendering by rewriting localized source files with UTF-8 encoding.
+- Added a toolbar button to fit the zoom to the full page.
+- Simplified project import/export to accept only the current file schema; legacy compatibility was removed.
 
 Files touched (important)
+- cad-web/src/i18n/index.ts
+  - Initializes i18next and language persistence.
+- cad-web/src/i18n/resources.ts
+  - Translation resources for en and pt-BR.
+- cad-web/src/main.tsx
+  - Boots i18n before rendering App.
 - cad-web/src/App.tsx
   - Potential render: pin-connected endpoints hide labels and arrows.
   - addShape for potential: resolves endpoint snap to pin vs potential (closest distance), only merges/splits on potential hits; pins do not alter potential numbers.
   - handleRenumberPotentials(): builds numberMap from potentialList order and updates all pages.
   - potentialList now includes pageIndex.
+  - TypeScript cleanup for potential helpers and jsPDF line dash usage so the project builds again.
+  - Localized page labels, context menu labels, export filename, and default generated names/text.
+  - Added fit-to-page request flow.
+  - Loading now validates only the current CadFile schema.
 - cad-web/src/components/CanvasView.tsx
   - Added pin hover logic and snap while drawing potential, plus green hover circle.
-- cad-web/src/components/PotentialsPanel.tsx
-  - Rewritten in English, added Renumber button.
+  - TypeScript cleanup around selection helpers and pin hit typing.
+  - Localized default created text/pin labels.
+  - Reused page auto-fit logic for manual fit-to-page action.
+- cad-web/src/components/Toolbar.tsx
+  - Localized tool labels and project/PDF actions.
+  - Added fit-to-page button.
 - cad-web/src/components/RightPanel.tsx
-  - Tab label “Potentials”, passes onRenumberPotentials.
+  - Localized tab labels.
+- cad-web/src/components/SettingsPanel.tsx
+  - Added language selector and localized settings labels.
+- cad-web/src/components/PropertiesPanel.tsx
+  - Localized editing labels and actions.
+- cad-web/src/components/LayersPanel.tsx
+  - Localized layer actions.
+- cad-web/src/components/PotentialsPanel.tsx
+  - Localized potential list labels and placeholders.
+- cad-web/src/components/ComponentsPanel.tsx
+  - Added return typing for thumbnail render helpers.
+  - Localized component panel texts.
+- cad-web/src/models.ts
+  - CadFile now requires only the current schema fields: version, layers, pages, components.
+- cad-web/src/utils/geometry.ts
+  - Added explicit Bounds typing for recursive getShapeBounds().
+- cad-web/.gitignore
+  - Now ignores .vite, logs, .env files, and tsconfig.tsbuildinfo.
+
+Environment / repo status
+- Node and npm were revalidated after machine format: node v24.14.0, npm 11.9.0.
+- Project dependencies install correctly.
+- Added i18next and react-i18next dependencies.
+- npm run build passes.
+- Vite production build succeeded; there is still a chunk-size warning for a bundle over 500 kB, but build is successful.
+- GitHub repository was created and connected successfully: https://github.com/RicardoKers/basic2dcad
+- tsconfig.tsbuildinfo was removed from Git tracking and is now ignored.
 
 Behavior notes
 - Pin connection hides arrow and label on that side.
 - Potential list order uses potentialList built from segments; renumber applies sequential numbers across all pages.
+- Language can be switched between en and pt-BR in Settings.
+- Fit-to-page is available from the toolbar.
+- Project JSON loading accepts only the current schema; old/partial formats are intentionally ignored.
+- Comments, variable names, and code structure remain in English.
 
 If continuing later
-- Ask user to run npm run dev for validation.
+- Run npm run dev for manual validation in both languages.
+- If desired, expand i18n coverage to any remaining secondary strings or future dialogs.
+- If desired, next cleanup could be reducing the large Vite chunk size warning.
+
+Latest update: built-in component library + development export flow
+- Refactored the component system into two sources:
+  - App Library: built-in components loaded from JSON files in src/library/components/*.json
+  - Project Components: user-saved components stored inside the project JSON file
+- Added src/library/index.ts to eagerly load built-in component JSON files through import.meta.glob and expose them as read-only library items.
+- Added src/utils/components.ts with reusable helpers for:
+  - creating a component definition from selected shapes
+  - preserving grid offsets for placement
+  - slug generation for stable file names/ids
+  - app-library file schema creation
+  - runtime validation of component/library payloads
+  - placement-key parsing for app vs project component placement
+- Components panel was redesigned:
+  - separate sections for App Library and Project Components
+  - search/filter input
+  - source/category badges
+  - inline export and delete actions for project components
+  - project save action now explicitly means save to project
+- Replaced the Vite development-only write-to-disk export with a browser download flow.
+- Built-in library export flow:
+  1. draw shapes on canvas
+  2. save as project component
+  3. click Download JSON on that project component
+  4. choose file name/category
+  5. browser downloads a versioned component JSON file
+  6. later place that file into src/library/components and rebuild the app
+- Project file schema remains strict/current-only and still stores only project components, not the built-in app library.
+- Added src/vite-env.d.ts so import.meta.glob is typed correctly.
+- npm run build passes after the refactor.
+
+Files added/changed for this phase
+- cad-web/src/library/index.ts
+- cad-web/src/library/components/.gitkeep
+- cad-web/src/utils/components.ts
+- cad-web/src/components/ComponentsPanel.tsx
+- cad-web/src/App.tsx
+- cad-web/src/models.ts
+- cad-web/src/styles.css
+- cad-web/src/i18n/resources.ts
+- cad-web/src/vite-env.d.ts
+- cad-web/vite.config.ts
+
+Current usage note
+- To create a built-in component, save a drawing selection as a project component and use the Download JSON action.
+- The downloaded JSON file can be shared with collaborators, then added to src/library/components and committed to Git so it ships with future builds.

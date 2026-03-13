@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { Component, LineStyle, Shape } from "../models";
+import { useTranslation } from "react-i18next";
+import type { Component, LibraryComponent, LineStyle, Shape } from "../models";
+import { buildComponentPlacementKey } from "../utils/components";
 import { arcToPath, getShapeBounds } from "../utils/geometry";
 
 const potentialEdgeFontSize = 3.2;
@@ -34,6 +36,26 @@ type PotentialLabelLayout = {
   rotation: number;
 };
 
+type ComponentsPanelProps = {
+  appComponents: LibraryComponent[];
+  projectComponents: Component[];
+  onSaveComponent: () => void;
+  onSelectComponent: (id: string) => void;
+  onDeleteComponent: (id: string) => void;
+  onRenameComponent: (id: string, name: string) => void;
+  onExportComponent?: (id: string) => void;
+  placingComponentId: string | null;
+  showPinConnection: boolean;
+  exportStatus?: { kind: "success" | "error"; message: string } | null;
+};
+
+type ComponentCardItem = {
+  key: string;
+  source: "app" | "project";
+  component: Component | LibraryComponent;
+  editableName: boolean;
+};
+
 function getLineStyleProps(lineStyle?: LineStyle) {
   const style = lineStyle ?? "solid";
   if (style === "dashed") {
@@ -53,7 +75,7 @@ function buildPotentialMidLabel(number: number, diameter?: number | null) {
   if (diameter === null || diameter === undefined || !Number.isFinite(diameter ?? NaN)) {
     return String(number);
   }
-  return `${number} - ${diameter}mm2`;
+  return `${number} - ${diameter}mm\u00B2`;
 }
 
 function getPotentialLabelLayout(shape: Shape & { type: "potential" }): PotentialLabelLayout {
@@ -152,43 +174,60 @@ function mergeBounds(a: Bounds, b: Bounds): Bounds {
   };
 }
 
-type ComponentsPanelProps = {
-  components: Component[];
-  onSaveComponent: () => void;
-  onSelectComponent: (id: string) => void;
-  onDeleteComponent: (id: string) => void;
-  onRenameComponent: (id: string, name: string) => void;
-  placingComponentId: string | null;
-  showPinConnection: boolean;
-};
-
 export default function ComponentsPanel({
-  components,
+  appComponents,
+  projectComponents,
   onSaveComponent,
   onSelectComponent,
   onDeleteComponent,
   onRenameComponent,
+  onExportComponent,
   placingComponentId,
-  showPinConnection
+  showPinConnection,
+  exportStatus
 }: ComponentsPanelProps) {
-  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    function handleClick() {
-      setContextMenu(null);
-    }
+  const searchTerm = query.trim().toLowerCase();
 
-    function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setContextMenu(null);
-    }
+  const filteredAppComponents = useMemo(
+    () => appComponents.filter((component) => matchesComponent(component, searchTerm)),
+    [appComponents, searchTerm]
+  );
 
-    window.addEventListener("click", handleClick);
-    window.addEventListener("keydown", handleKey);
-    return () => {
-      window.removeEventListener("click", handleClick);
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, []);
+  const filteredProjectComponents = useMemo(
+    () => projectComponents.filter((component) => matchesComponent(component, searchTerm)),
+    [projectComponents, searchTerm]
+  );
+
+  const appGroups = useMemo(() => {
+    const groups = new Map<string, LibraryComponent[]>();
+    filteredAppComponents.forEach((component) => {
+      const key = component.category.trim() || "__uncategorized__";
+      const bucket = groups.get(key);
+      if (bucket) {
+        bucket.push(component);
+      } else {
+        groups.set(key, [component]);
+      }
+    });
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, items]) => ({
+        key,
+        label: key === "__uncategorized__" ? t("components.uncategorized") : key,
+        items
+      }));
+  }, [filteredAppComponents, t]);
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }
 
   function getComponentBounds(shapes: Shape[]) {
     return shapes.reduce(
@@ -381,7 +420,7 @@ export default function ComponentsPanel({
     return null;
   }
 
-  function renderThumbnail(component: Component) {
+  function renderThumbnail(component: Component | LibraryComponent) {
     if (component.shapes.length === 0) return null;
     const bounds = getComponentBounds(component.shapes);
     const width = Math.max(1, bounds.maxX - bounds.minX);
@@ -396,58 +435,154 @@ export default function ComponentsPanel({
     );
   }
 
+  function renderCard(item: ComponentCardItem) {
+    const placementKey = buildComponentPlacementKey(item.source, item.component.id);
+    const isActive = placingComponentId === placementKey;
+
+    return (
+      <div
+        key={placementKey}
+        className={isActive ? "component-card active" : "component-card"}
+        onClick={() => onSelectComponent(placementKey)}
+        draggable
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", placementKey);
+          event.dataTransfer.effectAllowed = "copy";
+        }}
+      >
+        {renderThumbnail(item.component)}
+        <div className="component-card-content">
+          <div className="component-card-head">
+            {item.editableName ? (
+              <input
+                className="component-name-input"
+                type="text"
+                value={item.component.name}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => onRenameComponent(item.component.id, event.target.value)}
+              />
+            ) : (
+              <div className="component-name">{item.component.name}</div>
+            )}
+          </div>
+          {item.component.description && <p className="component-description">{item.component.description}</p>}
+          <div className="component-card-actions">
+            {item.source === "project" && onExportComponent && (
+              <button
+                type="button"
+                className="chip"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onExportComponent(item.component.id);
+                }}
+              >
+                {t("components.exportToAppLibrary")}
+              </button>
+            )}
+            {item.source === "project" && (
+              <button
+                type="button"
+                className="chip danger"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDeleteComponent(item.component.id);
+                }}
+              >
+                {t("components.delete")}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const noMatches = searchTerm.length > 0 && filteredAppComponents.length === 0 && filteredProjectComponents.length === 0;
+
   return (
     <section className="panel">
       <header className="panel-header">
-        <h3>Components</h3>
-        <button className="icon-button" onClick={onSaveComponent}>Save</button>
+        <h3>{t("components.title")}</h3>
+        <button className="icon-button" onClick={onSaveComponent}>{t("components.saveToProject")}</button>
       </header>
       <div className="panel-body component-list">
-        {components.length === 0 && <p className="muted">No components saved yet.</p>}
-        {components.map((component) => (
-          <div
-            key={component.id}
-            className={placingComponentId === component.id ? "component-card active" : "component-card"}
-            onClick={() => onSelectComponent(component.id)}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              setContextMenu({ id: component.id, x: event.clientX, y: event.clientY });
-            }}
-            draggable
-            onDragStart={(event) => {
-              event.dataTransfer.setData("text/plain", component.id);
-              event.dataTransfer.effectAllowed = "copy";
-            }}
-          >
-            {renderThumbnail(component)}
-            <input
-              className="component-name-input"
-              type="text"
-              value={component.name}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) => onRenameComponent(component.id, event.target.value)}
-            />
+        <input
+          className="component-search-input"
+          type="search"
+          value={query}
+          placeholder={t("components.searchPlaceholder")}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        {exportStatus && (
+          <p className={exportStatus.kind === "error" ? "error-text" : "success-text"}>{exportStatus.message}</p>
+        )}
+        <div className="component-section">
+          <div className="component-section-header">
+            <span>{t("components.appLibrary")}</span>
+            <span className="component-section-count">{appComponents.length}</span>
           </div>
-        ))}
-        <p className="muted small">Click a component, then click on canvas to place it. Hold Alt for contain select.</p>
-      </div>
-      {contextMenu && (
-        <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
-          <button
-            type="button"
-            className="context-menu-item danger"
-            onClick={() => {
-              onDeleteComponent(contextMenu.id);
-              setContextMenu(null);
-            }}
-          >
-            Delete component
-          </button>
+          {appGroups.length === 0 ? (
+            <p className="muted">{noMatches ? t("components.noMatches") : t("components.emptyAppLibrary")}</p>
+          ) : (
+            appGroups.map((group) => (
+              <div key={group.key} className="component-group">
+                <button
+                  type="button"
+                  className="component-group-toggle"
+                  onClick={() => toggleGroup(group.key)}
+                >
+                  <span className="component-group-title">{group.label}</span>
+                  <span className="component-group-toggle-meta">
+                    <span className="component-group-toggle-count">{group.items.length}</span>
+                    <span className="component-group-toggle-icon">
+                      {searchTerm.length > 0 || !collapsedGroups[group.key] ? "-" : "+"}
+                    </span>
+                  </span>
+                </button>
+                {(searchTerm.length > 0 || !collapsedGroups[group.key]) && (
+                  <div className="component-group-grid">
+                    {group.items.map((component) => renderCard({
+                      key: buildComponentPlacementKey("app", component.id),
+                      source: "app",
+                      component,
+                      editableName: false
+                    }))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
-      )}
+        <div className="component-section">
+          <div className="component-section-header">
+            <span>{t("components.projectComponents")}</span>
+            <span className="component-section-count">{projectComponents.length}</span>
+          </div>
+          {filteredProjectComponents.length === 0 ? (
+            <p className="muted">{noMatches ? t("components.noMatches") : t("components.emptyProjectComponents")}</p>
+          ) : (
+            <div className="component-group-grid">
+              {filteredProjectComponents.map((component) => renderCard({
+                key: buildComponentPlacementKey("project", component.id),
+                source: "project",
+                component,
+                editableName: true
+              }))}
+            </div>
+          )}
+          <p className="muted small">{t("components.exportHelp")}</p>
+        </div>
+        <p className="muted small">{t("components.placementHint")}</p>
+      </div>
     </section>
   );
 }
 
-
+function matchesComponent(component: Component | LibraryComponent, searchTerm: string) {
+  if (!searchTerm) return true;
+  const haystack = [component.name, component.category, component.description, ...component.tags]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(searchTerm);
+}

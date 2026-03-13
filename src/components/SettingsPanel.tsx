@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 import type { PdfSettings } from "../models";
+import { supportedLanguages, type SupportedLanguage } from "../i18n/resources";
 
 type SettingsPanelProps = {
   pdfSettings: PdfSettings;
@@ -25,15 +27,40 @@ export default function SettingsPanel({
   showPinConnection,
   onShowPinConnectionChange
 }: SettingsPanelProps) {
+  const { t, i18n } = useTranslation();
+  const currentLanguage: SupportedLanguage = i18n.resolvedLanguage === "pt-BR" ? "pt-BR" : "en";
+
   return (
     <div className="settings-stack">
       <section className="panel">
         <header className="panel-header">
-          <h3>PDF Settings</h3>
+          <h3>{t("settings.sections.language")}</h3>
         </header>
         <div className="panel-body settings-grid">
           <label>
-            Project
+            {t("language.label")}
+            <select
+              value={currentLanguage}
+              onChange={(event) => {
+                void i18n.changeLanguage(event.target.value as SupportedLanguage);
+              }}
+            >
+              {supportedLanguages.map((language) => (
+                <option key={language} value={language}>
+                  {language === "en" ? t("language.english") : t("language.portugueseBrazil")}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+      <section className="panel">
+        <header className="panel-header">
+          <h3>{t("settings.sections.pdf")}</h3>
+        </header>
+        <div className="panel-body settings-grid">
+          <label>
+            {t("settings.fields.project")}
             <input
               type="text"
               value={pdfSettings.project}
@@ -43,7 +70,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Drawing
+            {t("settings.fields.drawing")}
             <input
               type="text"
               value={pdfSettings.drawing}
@@ -53,7 +80,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Author
+            {t("settings.fields.author")}
             <input
               type="text"
               value={pdfSettings.author}
@@ -63,7 +90,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Sheet
+            {t("settings.fields.sheet")}
             <select
               value={pdfSettings.size}
               onChange={(event) =>
@@ -75,7 +102,7 @@ export default function SettingsPanel({
             </select>
           </label>
           <label>
-            Orientation
+            {t("settings.fields.orientation")}
             <select
               value={pdfSettings.orientation}
               onChange={(event) =>
@@ -85,12 +112,12 @@ export default function SettingsPanel({
                 })
               }
             >
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
+              <option value="portrait">{t("settings.fields.portrait")}</option>
+              <option value="landscape">{t("settings.fields.landscape")}</option>
             </select>
           </label>
           <label>
-            Margin Left
+            {t("settings.fields.marginLeft")}
             <input
               type="number"
               min={0}
@@ -102,7 +129,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Margin Right
+            {t("settings.fields.marginRight")}
             <input
               type="number"
               min={0}
@@ -114,7 +141,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Margin Top
+            {t("settings.fields.marginTop")}
             <input
               type="number"
               min={0}
@@ -126,7 +153,7 @@ export default function SettingsPanel({
             />
           </label>
           <label>
-            Margin Bottom
+            {t("settings.fields.marginBottom")}
             <input
               type="number"
               min={0}
@@ -142,7 +169,7 @@ export default function SettingsPanel({
 
       <section className="panel">
         <header className="panel-header">
-          <h3>Grid</h3>
+          <h3>{t("settings.sections.grid")}</h3>
         </header>
         <div className="panel-body grid-panel">
           <label className="row">
@@ -151,10 +178,10 @@ export default function SettingsPanel({
               checked={snapEnabled}
               onChange={(event) => onSnapEnabledChange(event.target.checked)}
             />
-            Snap
+            {t("settings.fields.snap")}
           </label>
           <label className="row">
-            Size
+            {t("settings.fields.size")}
             <input
               type="number"
               min={0.1}
@@ -164,7 +191,7 @@ export default function SettingsPanel({
             />
           </label>
           <label className="row">
-            Color
+            {t("settings.fields.color")}
             <input
               type="color"
               value={gridColor}
@@ -175,7 +202,7 @@ export default function SettingsPanel({
       </section>
       <section className="panel">
         <header className="panel-header">
-          <h3>Pins</h3>
+          <h3>{t("settings.sections.pins")}</h3>
         </header>
         <div className="panel-body grid-panel">
           <label className="row">
@@ -184,7 +211,7 @@ export default function SettingsPanel({
               checked={showPinConnection}
               onChange={(event) => onShowPinConnectionChange(event.target.checked)}
             />
-            Show connection X
+            {t("settings.fields.showConnectionX")}
           </label>
         </div>
       </section>

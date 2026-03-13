@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { jsPDF } from "jspdf";
 import type { CadFile, Component, Layer, Page, PdfSettings, Point, Shape, Tool, ViewState } from "./models";
+import { builtInComponents } from "./library";
 import { createId } from "./utils/id";
 import { getShapeBounds, translateShape } from "./utils/geometry";
+import {
+  buildAppLibraryComponentFile,
+  buildComponentPlacementKey,
+  createComponentDefinition,
+  instantiateComponent,
+  isComponentValue,
+  isShapeValue,
+  parseComponentPlacementKey,
+  slugifyComponentName
+} from "./utils/components";
 import { replacePlaceholders } from "./utils/text";
 import { formatMarkerAddress, getMarkerLayout, markerToBounds, pointToMarker } from "./utils/markers";
 import CanvasView from "./components/CanvasView";
@@ -92,10 +104,11 @@ type JsPdfWithLineDash = jsPDF & {
 const initialPageId = createId("page");
 
 const initialPages: Page[] = [
-  { id: initialPageId, name: "Page 1", shapes: [] }
+  { id: initialPageId, name: "", shapes: [] }
 ];
 
 export default function App() {
+  const { t } = useTranslation();
   const [layers, setLayers] = useState<Layer[]>(initialLayers);
   const [activeLayerId, setActiveLayerId] = useState<string>(initialLayers[0].id);
   const [pages, setPages] = useState<Page[]>(initialPages);
@@ -109,7 +122,9 @@ export default function App() {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [showPinConnection, setShowPinConnection] = useState(true);
   const [placingComponentId, setPlacingComponentId] = useState<string | null>(null);
+  const [fitToPageRequest, setFitToPageRequest] = useState(0);
   const [pdfSettings, setPdfSettings] = useState<PdfSettings>(initialPdfSettings);
+  const [componentExportStatus, setComponentExportStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
   const [pageMenu, setPageMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [navigateTarget, setNavigateTarget] = useState<{ pageId: string; bounds: Bounds } | null>(null);
@@ -136,6 +151,7 @@ export default function App() {
 
   const shapes = activePage?.shapes ?? [];
   const selection = selectionByPage[activePageId] ?? [];
+  const getDefaultPageName = (index: number) => t("app.pageLabel", { number: index + 1 });
   const view = viewByPage[activePageId] ?? { scale: 1, offsetX: 0, offsetY: 0 };
   const shouldAutoFit = !viewByPage[activePageId];
 
@@ -619,7 +635,7 @@ export default function App() {
       .filter((page) => page.id !== pageId)
       .map((page, index) => ({
         ...page,
-        name: `Page ${index + 1}`
+        name: getDefaultPageName(index)
       }));
     setPages(remaining);
     setSelectionByPage((prev) => {
@@ -805,6 +821,18 @@ export default function App() {
     return best;
   }
 
+  function findPotentialHitForNumber(
+    point: Point,
+    items: Shape[],
+    potentialNumber: number,
+    excludeId: string
+  ): PotentialHit | null {
+    const segments = collectPotentialSegments(items).filter(
+      (segment) => segment.shape.potentialNumber === potentialNumber && segment.id !== excludeId
+    );
+    return findPotentialHit(point, segments);
+  }
+
   function splitPotentialShape(shape: Shape & { type: "potential" }, splitPoints: Point[]) {
     const start = { x: shape.x1, y: shape.y1 };
     const end = { x: shape.x2, y: shape.y2 };
@@ -854,6 +882,59 @@ export default function App() {
       }
       return [shape];
     });
+  }
+
+  function reconcilePotentialContacts(items: Shape[]): Shape[] {
+    const splitRequests = new Map<string, Point[]>();
+
+    const connectShape = (shape: Shape, rootItems: Shape[]): Shape => {
+      if (shape.type === "group") {
+        return {
+          ...shape,
+          children: shape.children.map((child) => connectShape(child, rootItems))
+        };
+      }
+
+      if (shape.type !== "potential") return shape;
+
+      const startHit = findPotentialHitForNumber(
+        { x: shape.x1, y: shape.y1 },
+        rootItems,
+        shape.potentialNumber,
+        shape.id
+      );
+      const endHit = findPotentialHitForNumber(
+        { x: shape.x2, y: shape.y2 },
+        rootItems,
+        shape.potentialNumber,
+        shape.id
+      );
+
+      const registerSplit = (hit: PotentialHit | null) => {
+        if (!hit || hit.isEndpoint) return;
+        const list = splitRequests.get(hit.segmentId);
+        if (list) {
+          list.push(hit.point);
+        } else {
+          splitRequests.set(hit.segmentId, [hit.point]);
+        }
+      };
+
+      registerSplit(startHit);
+      registerSplit(endHit);
+
+      return {
+        ...shape,
+        x1: startHit ? startHit.point.x : shape.x1,
+        y1: startHit ? startHit.point.y : shape.y1,
+        x2: endHit ? endHit.point.x : shape.x2,
+        y2: endHit ? endHit.point.y : shape.y2
+      };
+    };
+
+    const connectedShapes = items.map((shape) => connectShape(shape, items));
+    if (splitRequests.size === 0) return connectedShapes;
+    return applyPotentialSplits(connectedShapes, splitRequests);
   }
 
   function findPotentialConnection(start: Point, end: Point): PotentialEndpointInfo | null {
@@ -1426,12 +1507,66 @@ export default function App() {
   function handleResizeEnd() {
     resizeRef.current = null;
     historyPausedRef.current = false;
-    pushSnapshot(buildSnapshot());
+    const reconciledShapes = reconcilePotentialContacts(shapes);
+    setPages((prev) =>
+      prev.map((page) => (page.id === activePageId ? { ...page, shapes: reconciledShapes } : page))
+    );
+    pushSnapshot({
+      ...buildSnapshot(),
+      pages: pages.map((page) => (page.id === activePageId ? { ...page, shapes: reconciledShapes } : page))
+    });
+  }
+
+  function handleMoveEnd() {
+    historyPausedRef.current = false;
+    const reconciledShapes = reconcilePotentialContacts(shapes);
+    setPages((prev) =>
+      prev.map((page) => (page.id === activePageId ? { ...page, shapes: reconciledShapes } : page))
+    );
+    pushSnapshot({
+      ...buildSnapshot(),
+      pages: pages.map((page) => (page.id === activePageId ? { ...page, shapes: reconciledShapes } : page))
+    });
+  }
+
+  function isLayer(value: unknown): value is Layer {
+    return typeof value === "object" && value !== null &&
+      typeof (value as Layer).id === "string" &&
+      typeof (value as Layer).name === "string" &&
+      typeof (value as Layer).visible === "boolean" &&
+      typeof (value as Layer).locked === "boolean";
+  }
+
+  function isShape(value: unknown): value is Shape {
+    return isShapeValue(value);
+  }
+
+  function isPage(value: unknown): value is Page {
+    return typeof value === "object" && value !== null &&
+      typeof (value as Page).id === "string" &&
+      typeof (value as Page).name === "string" &&
+      Array.isArray((value as Page).shapes) &&
+      (value as Page).shapes.every((shape) => isShape(shape));
+  }
+
+  function isComponent(value: unknown): value is Component {
+    return isComponentValue(value);
+  }
+
+  function isCadFile(value: unknown): value is CadFile {
+    return typeof value === "object" && value !== null &&
+      typeof (value as CadFile).version === "number" &&
+      Array.isArray((value as CadFile).layers) &&
+      (value as CadFile).layers.every((layer) => isLayer(layer)) &&
+      Array.isArray((value as CadFile).pages) &&
+      (value as CadFile).pages.every((page) => isPage(page)) &&
+      Array.isArray((value as CadFile).components) &&
+      (value as CadFile).components.every((component) => isComponent(component));
   }
 
   function handleSaveJson() {
     const payload: CadFile = {
-      version: 2,
+      version: 3,
       layers,
       pages,
       components
@@ -1451,8 +1586,8 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        const data = JSON.parse(reader.result as string) as CadFile;
-        if (!data.layers || !data.pages || !data.components) return;
+        const data = JSON.parse(reader.result as string) as unknown;
+        if (!isCadFile(data)) return;
         setLayers(data.layers);
         setPages(data.pages);
         setComponents(data.components);
@@ -1460,6 +1595,7 @@ export default function App() {
         setActivePageId(data.pages[0]?.id ?? "");
         setSelectionByPage({});
         setViewByPage({});
+        setComponentExportStatus(null);
       } catch {
         // ignore invalid file
       }
@@ -1470,7 +1606,7 @@ export default function App() {
   function handleAddLayer() {
     const layer: Layer = {
       id: createId("layer"),
-      name: `Layer ${layers.length + 1}`,
+      name: t("app.layerLabel", { number: layers.length + 1 }),
       visible: true,
       locked: false
     };
@@ -1530,28 +1666,13 @@ export default function App() {
     if (selection.length === 0) return;
     const selectedShapes = shapes.filter((shape) => selection.includes(shape.id));
     if (selectedShapes.length === 0) return;
-    let minX = Infinity;
-    let minY = Infinity;
-    selectedShapes.forEach((shape) => {
-      const bounds = getShapeBounds(shape);
-      minX = Math.min(minX, bounds.minX);
-      minY = Math.min(minY, bounds.minY);
-    });
-    const componentShapes = selectedShapes.map((shape) => ({
-      ...translateShape(shape, -minX, -minY),
-      id: createId("cshape")
-    }));
-    const safeGrid = gridSize > 0 ? gridSize : 0;
-    const gridOffsetX = safeGrid ? ((minX % safeGrid) + safeGrid) % safeGrid : 0;
-    const gridOffsetY = safeGrid ? ((minY % safeGrid) + safeGrid) % safeGrid : 0;
-    const component: Component = {
+    const component = createComponentDefinition(selectedShapes, {
       id: createId("component"),
-      name: `Component ${components.length + 1}`,
-      shapes: componentShapes,
-      gridOffsetX,
-      gridOffsetY
-    };
+      name: t("components.defaultName", { number: components.length + 1 }),
+      gridSize
+    });
     setComponents((prev) => [...prev, component]);
+    setComponentExportStatus(null);
   }
 
   function handleRenameComponent(id: string, name: string) {
@@ -1560,7 +1681,45 @@ export default function App() {
 
   function handleDeleteComponent(id: string) {
     setComponents((prev) => prev.filter((component) => component.id !== id));
-    if (placingComponentId === id) setPlacingComponentId(null);
+    if (placingComponentId === buildComponentPlacementKey("project", id)) setPlacingComponentId(null);
+    setComponentExportStatus(null);
+  }
+
+  function handleExportComponent(id: string) {
+    const component = components.find((item) => item.id === id);
+    if (!component) return;
+
+    const fileNameInput = window.prompt(t("components.exportFilePrompt"), slugifyComponentName(component.name));
+    if (fileNameInput === null) return;
+
+    const fileName = slugifyComponentName(fileNameInput);
+    const categoryInput = window.prompt(t("components.exportCategoryPrompt"), component.category);
+    if (categoryInput === null) return;
+
+    const file = buildAppLibraryComponentFile({
+      ...component,
+      id: fileName,
+      name: component.name.trim() || fileName,
+      category: categoryInput.trim()
+    });
+
+    try {
+      const fileContent = JSON.stringify(file, null, 2);
+      const blob = new Blob([`${fileContent}\n`], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileName}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setComponentExportStatus({
+        kind: "success",
+        message: t("components.exportSuccess", { fileName: `${fileName}.json` })
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("components.exportFailed");
+      setComponentExportStatus({ kind: "error", message });
+    }
   }
 
   function handleDeleteSelection() {
@@ -1686,54 +1845,19 @@ export default function App() {
   }
 
   function handlePlaceComponentAt(componentId: string, x: number, y: number) {
-    const component = components.find((item) => item.id === componentId);
+    const placement = parseComponentPlacementKey(componentId);
+    if (!placement) return;
+    const source = placement.source === "app" ? builtInComponents : components;
+    const component = source.find((item) => item.id === placement.componentId);
     if (!component) return;
-    const bounds = component.shapes.reduce(
-      (acc, shape) => {
-        const shapeBounds = getShapeBounds(shape);
-        return {
-          minX: Math.min(acc.minX, shapeBounds.minX),
-          minY: Math.min(acc.minY, shapeBounds.minY)
-        };
-      },
-      { minX: Infinity, minY: Infinity }
-    );
-    let targetX = x;
-    let targetY = y;
-    if (snapEnabled && gridSize > 0) {
-      const offsetModX = component.gridOffsetX ?? (((bounds.minX % gridSize) + gridSize) % gridSize);
-      const offsetModY = component.gridOffsetY ?? (((bounds.minY % gridSize) + gridSize) % gridSize);
-      const adjustX = ((targetX - offsetModX) % gridSize + gridSize) % gridSize;
-      const adjustY = ((targetY - offsetModY) % gridSize + gridSize) % gridSize;
-      targetX -= adjustX;
-      targetY -= adjustY;
-    }
-    const dx = Number.isFinite(bounds.minX) ? targetX - bounds.minX : targetX;
-    const dy = Number.isFinite(bounds.minY) ? targetY - bounds.minY : targetY;
-    const nextPotentialNumberRef = { value: nextPotentialNumber };
-    const cloneShapeWithNewIds = (shape: Shape, dx: number, dy: number): Shape => {
-      const moved = translateShape(shape, dx, dy);
-      if (moved.type === "group") {
-        return {
-          ...moved,
-          id: createId("shape"),
-          layerId: activeLayerId,
-          children: moved.children.map((child) => cloneShapeWithNewIds(child, 0, 0))
-        };
-      }
-      if (moved.type === "potential") {
-        const number = nextPotentialNumberRef.value;
-        nextPotentialNumberRef.value += 1;
-        return {
-          ...moved,
-          id: createId("shape"),
-          layerId: activeLayerId,
-          potentialNumber: number
-        };
-      }
-      return { ...moved, id: createId("shape"), layerId: activeLayerId };
-    };
-    const newShapes = component.shapes.map((shape) => cloneShapeWithNewIds(shape, dx, dy));
+    const newShapes = instantiateComponent(component, {
+      x,
+      y,
+      gridSize,
+      snapEnabled,
+      activeLayerId,
+      nextPotentialNumber
+    });
     updateActivePageShapes((prev) => [...prev, ...newShapes]);
     setPlacingComponentId(null);
   }
@@ -1800,7 +1924,7 @@ export default function App() {
       if (diameter === null || diameter === undefined || !Number.isFinite(diameter ?? NaN)) {
         return String(number);
       }
-      return `${number} - ${diameter}mm2`;
+      return `${number} - ${diameter}mm²`;
     };
 
     const collectPotentialJunctions = (items: Shape[]) => {
@@ -2089,7 +2213,7 @@ export default function App() {
       }
     });
 
-    pdf.save("cad-export.pdf");
+    pdf.save(t("app.exportFilename"));
   }
 
   return (
@@ -2097,6 +2221,7 @@ export default function App() {
       <Toolbar
         tool={tool}
         onToolChange={setTool}
+        onFitToPage={() => setFitToPageRequest((value) => value + 1)}
         onSaveJson={handleSaveJson}
         onLoadJson={handleLoadJson}
         onExportPdf={handleExportPdf}
@@ -2104,13 +2229,16 @@ export default function App() {
       <div className="workspace">
         <aside className="sidebar">
           <ComponentsPanel
-            components={components}
+            appComponents={builtInComponents}
+            projectComponents={components}
             onSaveComponent={handleSaveComponent}
             onSelectComponent={setPlacingComponentId}
             onDeleteComponent={handleDeleteComponent}
             onRenameComponent={handleRenameComponent}
+            onExportComponent={handleExportComponent}
             placingComponentId={placingComponentId}
             showPinConnection={showPinConnection}
+            exportStatus={componentExportStatus}
           />
         </aside>
         <CanvasView
@@ -2127,6 +2255,7 @@ export default function App() {
           pdfSettings={pdfSettings}
           gridColor={gridColor}
           shouldAutoFit={shouldAutoFit}
+          fitToPageRequest={fitToPageRequest}
           pageIndex={activePageIndex}
           totalPages={pages.length}
           pageId={activePageId}
@@ -2140,10 +2269,7 @@ export default function App() {
           onMoveStart={() => {
             historyPausedRef.current = true;
           }}
-          onMoveEnd={() => {
-            historyPausedRef.current = false;
-            pushSnapshot(buildSnapshot());
-          }}
+          onMoveEnd={handleMoveEnd}
           onSelect={setSelection}
           onPlaceComponentAt={handlePlaceComponentAt}
           onCancelPlacingComponent={() => setPlacingComponentId(null)}
@@ -2208,7 +2334,7 @@ export default function App() {
           onShowPinConnectionChange={setShowPinConnection}
         />
       </div>
-      <div className="page-tabs" role="tablist" aria-label="Pages">
+      <div className="page-tabs" role="tablist" aria-label={t("app.pagesAriaLabel")}>
         {pages.map((page, index) => (
           <button
             key={page.id}
@@ -2220,14 +2346,14 @@ export default function App() {
               setPageMenu({ id: page.id, x: event.clientX, y: event.clientY });
             }}
           >
-            {page.name || `Page ${index + 1}`}
+            {page.name || getDefaultPageName(index)}
           </button>
         ))}
         <button
           className="page-tab add"
           onClick={() => {
             const nextId = createId("page");
-            const nextName = `Page ${pages.length + 1}`;
+            const nextName = getDefaultPageName(pages.length);
             setPages((prev) => [...prev, { id: nextId, name: nextName, shapes: [] }]);
             setActivePageId(nextId);
           }}
@@ -2245,7 +2371,7 @@ export default function App() {
               setPageMenu(null);
             }}
           >
-            Delete page
+            {t("app.deletePage")}
           </button>
         </div>
       )}
@@ -2260,7 +2386,7 @@ export default function App() {
                 setSelectionMenu(null);
               }}
             >
-              Group selection
+              {t("app.groupSelection")}
             </button>
           )}
           {canUngroupSelection && (
@@ -2272,13 +2398,13 @@ export default function App() {
                 setSelectionMenu(null);
               }}
             >
-              Ungroup
+              {t("app.ungroup")}
             </button>
           )}
           {canMoveSelection && (
             <>
               <div className="context-menu-separator" />
-              <div className="context-menu-label">Move to layer</div>
+              <div className="context-menu-label">{t("app.moveToLayer")}</div>
               {layers.map((layer) => (
                 <button
                   key={layer.id}
@@ -2299,6 +2425,14 @@ export default function App() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
 
 
 
