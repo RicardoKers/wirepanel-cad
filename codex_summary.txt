@@ -1,0 +1,31 @@
+Summary (updated)
+
+Project: d:\06_Temporary\Basic2DCAD\cad-web
+
+Recent work focus: potentials + pins + UI panel + renumber.
+
+Key changes
+- Potentials can connect to pins: when drawing a potential, the cursor snaps to a nearby pin (tolerance ~0.8mm). A small green circle highlights the pin. When connected to a pin, the potential end does NOT show the edge label or arrow. Connection to other potentials still supports T-connections and junction dots.
+- Potential label visibility is driven by potentialRender in App.tsx. Endpoints connected to pins are marked not visible, so both labels and arrows are hidden on that side.
+- Potential list panel is now English: tab label “Potentials”, header “Potentials”, button “Renumber”, empty state “No potentials yet.”, and placeholders “Unnamed” / “No size”.
+- Added a “Renumber” button in the Potentials tab to renumber all potential numbers sequentially based on visual order: page order, then top-to-bottom (bounds.minY), then left-to-right (bounds.minX).
+
+Files touched (important)
+- cad-web/src/App.tsx
+  - Potential render: pin-connected endpoints hide labels and arrows.
+  - addShape for potential: resolves endpoint snap to pin vs potential (closest distance), only merges/splits on potential hits; pins do not alter potential numbers.
+  - handleRenumberPotentials(): builds numberMap from potentialList order and updates all pages.
+  - potentialList now includes pageIndex.
+- cad-web/src/components/CanvasView.tsx
+  - Added pin hover logic and snap while drawing potential, plus green hover circle.
+- cad-web/src/components/PotentialsPanel.tsx
+  - Rewritten in English, added Renumber button.
+- cad-web/src/components/RightPanel.tsx
+  - Tab label “Potentials”, passes onRenumberPotentials.
+
+Behavior notes
+- Pin connection hides arrow and label on that side.
+- Potential list order uses potentialList built from segments; renumber applies sequential numbers across all pages.
+
+If continuing later
+- Ask user to run npm run dev for validation.
