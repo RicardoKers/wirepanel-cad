@@ -5,8 +5,5 @@ dist
 *.log
 .env
 .env.*
-.vite
-*.log
-.env
-.env.*
+tsconfig.tsbuildinfo
 
