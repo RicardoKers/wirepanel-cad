@@ -82,6 +82,12 @@ type PotentialEndpointInfo = {
   shared: PotentialSharedChanges;
 };
 
+type PotentialArrowDirection = "forward" | "backward";
+
+type JsPdfWithLineDash = jsPDF & {
+  setLineDash?: (dashArray: number[], dashPhase?: number) => jsPDF;
+};
+
 
 const initialPageId = createId("page");
 
@@ -382,9 +388,9 @@ export default function App() {
             const endLabelVisible = endVisible;
             const startRole = startVisible ? getEndpointRole(item.start.key) : null;
             const endRole = endVisible ? getEndpointRole(item.end.key) : null;
-            let startArrow =
+            let startArrow: PotentialArrowDirection | undefined =
               startRole === "start" ? "forward" : startRole === "end" ? "backward" : undefined;
-            let endArrow =
+            let endArrow: PotentialArrowDirection | undefined =
               endRole === "start" ? "backward" : endRole === "end" ? "forward" : undefined;
             const isVertical = Math.abs(item.start.point.x - item.end.point.x) <= 0.001;
             if (isVertical) {
@@ -912,7 +918,7 @@ export default function App() {
           : endTarget?.kind === "potential"
             ? endTarget.hit
             : null;
-      const merged = connection ? mergePotentialShared(shape, connection.shared) : shape;
+      const merged = (connection ? mergePotentialShared(shape as Extract<Shape, { type: "potential" }>, connection.shared) : shape) as Extract<Shape, { type: "potential" }>;
       const updatedShape = {
         ...merged,
         potentialNumber: connection ? connection.number : merged.potentialNumber,
@@ -1051,6 +1057,10 @@ export default function App() {
     return null;
   }
 
+  function isPotentialShape(shape: Shape): shape is Extract<Shape, { type: "potential" }> {
+    return shape.type === "potential";
+  }
+
   function updatePotentialShared(id: string, changes: PotentialSharedChanges) {
     const targetNumber = getPotentialNumberById(id);
     if (targetNumber === null) {
@@ -1075,13 +1085,13 @@ export default function App() {
         return prev;
       }
       const existingShared = findPotentialSharedByNumber(prev, nextNumber, id);
-      let updatedPotential: Shape | null = null;
+      let updatedPotential: Extract<Shape, { type: "potential" }> | null = null;
       const updateShapes = (items: Shape[]): Shape[] =>
         items.map((shape) => {
           if (shape.type === "group") {
             return { ...shape, children: updateShapes(shape.children) };
           }
-          if (shape.type === "potential" && shape.id === id) {
+          if (isPotentialShape(shape) && shape.id === id) {
             const nextShape = { ...shape, potentialNumber: nextNumber };
             updatedPotential = nextShape;
             return nextShape;
@@ -1090,7 +1100,7 @@ export default function App() {
       });
 
       let nextPages = prev.map((page) => ({ ...page, shapes: updateShapes(page.shapes) }));
-      if (updatedPotential && updatedPotential.type === "potential") {
+      if (updatedPotential) {
         const shared = existingShared ?? extractPotentialShared(updatedPotential);
         nextPages = nextPages.map((page) => ({
           ...page,
@@ -1741,6 +1751,10 @@ export default function App() {
       format: [rawWidth, rawHeight],
       orientation: pdfSettings.orientation
     });
+    const pdfWithLineDash = pdf as JsPdfWithLineDash;
+    const setPdfLineDash = (dashArray: number[], dashPhase = 0) => {
+      pdfWithLineDash.setLineDash?.(dashArray, dashPhase);
+    };
 
     const layout = getMarkerLayout(pdfSettings);
     const {
@@ -1915,13 +1929,13 @@ export default function App() {
         pdf.setDrawColor(shape.lineColor);
         pdf.setLineWidth(Math.max(0.1, shape.lineWidth * pxToMm));
         if (shape.lineStyle === "dashed") {
-          pdf.setLineDash([3, 2], 0);
+          setPdfLineDash([3, 2], 0);
           pdf.setLineCap(0);
         } else if (shape.lineStyle === "dotted") {
-          pdf.setLineDash([0.5, 2], 0);
+          setPdfLineDash([0.5, 2], 0);
           pdf.setLineCap(1);
         } else {
-          pdf.setLineDash([], 0);
+          setPdfLineDash([], 0);
           pdf.setLineCap(0);
         }
         if (shape.type === "line") {
@@ -2010,7 +2024,7 @@ export default function App() {
             );
           }
 
-          pdf.setLineDash([], 0);
+          setPdfLineDash([], 0);
           const startVisible = renderInfo?.startVisible ?? true;
           const endVisible = renderInfo?.endVisible ?? true;
           const startDirection = renderInfo?.startArrow ?? "forward";
@@ -2061,7 +2075,7 @@ export default function App() {
           pdf.setFontSize(Math.max(1, shape.tagFontSize * mmToPt));
           pdf.text(shape.tag, mapX(shape.tagX), mapY(shape.tagY));
         }
-        pdf.setLineDash([], 0);
+        setPdfLineDash([], 0);
         pdf.setLineCap(0);
       };
 
@@ -2285,3 +2299,10 @@ export default function App() {
     </div>
   );
 }
+
+
+
+
+
+
+

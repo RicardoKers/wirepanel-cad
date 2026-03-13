@@ -180,7 +180,7 @@ function collectPins(items: Shape[]): Point[] {
   return pins;
 }
 
-function findPinHit(point: Point, pins: Point[]) {
+function findPinHit(point: Point, pins: Point[]): { point: Point; distance: number } | null {
   let best: { point: Point; distance: number } | null = null;
   pins.forEach((pin) => {
     const dist = Math.hypot(point.x - pin.x, point.y - pin.y);
@@ -191,6 +191,11 @@ function findPinHit(point: Point, pins: Point[]) {
   });
   return best;
 }
+
+type DistanceCandidate = {
+  shape: Shape;
+  distance: number;
+};
 
 export default function CanvasView({
   shapes,
@@ -413,8 +418,10 @@ export default function CanvasView({
   function findClosestShape(point: Point, includeText = false): Shape | null {
     let closest: Shape | null = null;
     let bestDistance = Infinity;
-    let bestText: { shape: Shape; distance: number } | null = null;
-    let bestNonText: { shape: Shape; distance: number } | null = null;
+    let bestTextShape: Shape | null = null;
+    let bestTextDistance = Infinity;
+    let bestNonTextShape: Shape | null = null;
+    let bestNonTextDistance = Infinity;
     shapes.forEach((shape) => {
       if (!isShapeVisible(shape) || !isShapeSelectable(shape)) return;
       if (shape.type === "text" && !includeText) return;
@@ -424,21 +431,23 @@ export default function CanvasView({
         closest = shape;
       }
       if (shape.type === "text") {
-        if (!bestText || dist < bestText.distance) {
-          bestText = { shape, distance: dist };
+        if (dist < bestTextDistance) {
+          bestTextDistance = dist;
+          bestTextShape = shape;
         }
-      } else if (!bestNonText || dist < bestNonText.distance) {
-        bestNonText = { shape, distance: dist };
+      } else if (dist < bestNonTextDistance) {
+        bestNonTextDistance = dist;
+        bestNonTextShape = shape;
       }
     });
     const threshold = Math.max(selectionProximityPx / view.scale, 2);
-    if (bestNonText && bestNonText.distance <= threshold) {
-      return bestNonText.shape;
+    if (bestNonTextShape !== null && bestNonTextDistance <= threshold) {
+      return bestNonTextShape;
     }
-    if (bestText && includeText) {
+    if (bestTextShape !== null && includeText) {
       const textThreshold = Math.min(textSelectionProximityPx / view.scale, textSelectionProximityMm);
-      if (bestText.distance <= textThreshold) {
-        return bestText.shape;
+      if (bestTextDistance <= textThreshold) {
+        return bestTextShape;
       }
     }
     if (!closest || bestDistance > threshold) return null;
@@ -1955,3 +1964,8 @@ export default function CanvasView({
     </div>
   );
 }
+
+
+
+
+

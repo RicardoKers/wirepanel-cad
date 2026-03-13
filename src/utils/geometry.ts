@@ -1,5 +1,12 @@
 import type { ArcShape, Point, Shape } from "../models";
 
+type Bounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
 export function distance(a: Point, b: Point) {
   const dx = a.x - b.x;
   const dy = a.y - b.y;
@@ -56,7 +63,7 @@ export function translateShape(shape: Shape, dx: number, dy: number): Shape {
   }
 }
 
-export function getShapeBounds(shape: Shape) {
+export function getShapeBounds(shape: Shape): Bounds {
   switch (shape.type) {
     case "line": {
       const minX = Math.min(shape.x1, shape.x2);
@@ -89,7 +96,7 @@ export function getShapeBounds(shape: Shape) {
     }
     case "group": {
       if (shape.children.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-      return shape.children.reduce(
+      return shape.children.reduce<Bounds>(
         (acc, child) => {
           const bounds = getShapeBounds(child);
           return {
@@ -106,3 +113,5 @@ export function getShapeBounds(shape: Shape) {
       return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
   }
 }
+
+

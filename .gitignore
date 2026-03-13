@@ -1,3 +1,12 @@
 node_modules
 dist
 .DS_Store
+.vite
+*.log
+.env
+.env.*
+.vite
+*.log
+.env
+.env.*
+

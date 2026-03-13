@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import type { Component, LineStyle, Shape } from "../models";
 import { arcToPath, getShapeBounds } from "../utils/geometry";
 
@@ -220,7 +221,7 @@ export default function ComponentsPanel({
     return labelBounds.reduce((acc, bounds) => mergeBounds(acc, bounds), baseBounds);
   }
 
-  function renderShape(shape: Shape) {
+  function renderShape(shape: Shape): ReactNode {
     if (shape.type === "group") {
       return shape.children.map((child) => renderShape(child));
     }
@@ -448,3 +449,5 @@ export default function ComponentsPanel({
     </section>
   );
 }
+
+
