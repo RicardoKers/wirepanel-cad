@@ -9,7 +9,8 @@ type Bounds = {
   maxY: number;
 };
 
-export const appLibraryComponentSchema = "basic2dcad.app-library-component" as const;
+export const appLibraryComponentSchema = "wirepanel-cad.app-library-component" as const;
+const legacyAppLibraryComponentSchemas = ["basic2dcad.app-library-component"] as const;
 export const appLibraryComponentVersion = 1 as const;
 
 export function cloneShape(shape: Shape): Shape {
@@ -243,8 +244,9 @@ export function isComponentValue(value: unknown): value is Component {
 }
 
 export function isAppLibraryComponentFile(value: unknown): value is AppLibraryComponentFile {
-  return typeof value === "object" && value !== null &&
-    (value as AppLibraryComponentFile).schema === appLibraryComponentSchema &&
+  if (typeof value !== "object" || value === null) return false;
+  const schema = (value as AppLibraryComponentFile).schema;
+  return (schema === appLibraryComponentSchema || legacyAppLibraryComponentSchemas.includes(schema as never)) &&
     (value as AppLibraryComponentFile).version === appLibraryComponentVersion &&
     isComponentValue((value as AppLibraryComponentFile).component);
 }

@@ -2,7 +2,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { resources, supportedLanguages, type SupportedLanguage } from "./resources";
 
-const storageKey = "basic2dcad.language";
+const storageKey = "wirepanel-cad.language";
 
 function normalizeLanguage(input: string | null | undefined): SupportedLanguage {
   if (!input) return "en";

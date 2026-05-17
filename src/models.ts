@@ -104,7 +104,7 @@ export type LibraryComponent = Component & {
 };
 
 export type AppLibraryComponentFile = {
-  schema: "basic2dcad.app-library-component";
+  schema: "wirepanel-cad.app-library-component" | "basic2dcad.app-library-component";
   version: 1;
   component: Component;
 };

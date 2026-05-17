@@ -1,10 +1,10 @@
-# Basic2DCAD
+# WirePanel CAD
 
 Browser-based 2D CAD for industrial electrical drawings, built with React, TypeScript and Vite.
 
 ## Overview
 
-Basic2DCAD is a lightweight web CAD focused on electrical schematics and panel drawings. It runs fully in the browser and stores project data as JSON files handled by the user.
+WirePanel CAD is a lightweight web CAD focused on electrical schematics and panel drawings. It runs fully in the browser and stores project data as JSON files handled by the user.
 
 Current highlights:
 
@@ -25,7 +25,7 @@ Current highlights:
 
 GitHub Pages:
 
-- `https://ricardokers.github.io/basic2dcad/`
+- `https://ricardokers.github.io/wirepanel-cad/`
 
 ## Tech Stack
 
@@ -38,7 +38,7 @@ GitHub Pages:
 ## Project Structure
 
 ```text
-cad-web/
+wirepanel-cad/
   public/
     help/                   HTML manuals used by the app
   src/
@@ -269,7 +269,7 @@ Important files:
 
 The app is built with:
 
-- Vite `base` set to `/basic2dcad/`
+- Vite `base` set to `/wirepanel-cad/`
 - automatic deployment on push to `main`
 
 Typical flow:
@@ -298,4 +298,4 @@ If the workflow build passes, GitHub Pages is updated automatically.
 
 ## Repository
 
-- GitHub: `https://github.com/RicardoKers/basic2dcad`
+- GitHub: `https://github.com/RicardoKers/wirepanel-cad`

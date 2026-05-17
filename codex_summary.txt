@@ -1,12 +1,12 @@
 Summary (updated)
 
-Project: d:\06_Temporary\Basic2DCAD\cad-web
+Project: d:\06_Temporary\wirepanel-cad\wirepanel-cad
 
 Current state
 - The app is a browser-based 2D CAD for industrial electrical drawings built with React, TypeScript and Vite.
 - `npm run build` passes.
-- The project is connected to GitHub at `https://github.com/RicardoKers/basic2dcad`.
-- GitHub Pages deployment is configured for the project site at `https://ricardokers.github.io/basic2dcad/`.
+- The project is connected to GitHub at `https://github.com/RicardoKers/wirepanel-cad`.
+- GitHub Pages deployment is configured for the project site at `https://ricardokers.github.io/wirepanel-cad/`.
 - Code structure, comments and variable names remain in English.
 
 Environment and repo
@@ -14,7 +14,7 @@ Environment and repo
 - Dependencies install correctly.
 - `.gitignore` was improved and `tsconfig.tsbuildinfo` is no longer tracked.
 - The repository is configured for automatic deployment on push to `main` through `.github/workflows/deploy.yml`.
-- `vite.config.ts` now uses `base: "/basic2dcad/"` for GitHub Pages.
+- `vite.config.ts` now uses `base: "/wirepanel-cad/"` for GitHub Pages.
 
 Main functional features
 - Drawing tools: select, line, potential, circle, arc, text, pin and pan.
@@ -102,7 +102,7 @@ Manual and documentation
 Publishing
 - The app is prepared for GitHub Pages project-site hosting.
 - Expected published URL:
-  - `https://ricardokers.github.io/basic2dcad/`
+  - `https://ricardokers.github.io/wirepanel-cad/`
 - Pushes to `main` trigger automatic build and deploy through GitHub Actions.
 - If the workflow build fails, the previous deployed version remains active.
 
