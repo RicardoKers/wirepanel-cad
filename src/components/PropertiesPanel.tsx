@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Layer, Shape } from "../models";
+import type { ComponentInstance, Layer, Shape } from "../models";
 import { getShapeBounds, translateShape } from "../utils/geometry";
 
 type PropertiesPanelProps = {
   selectedShape: Shape | null;
   selectionCount: number;
+  selectedComponentInstance: ComponentInstance | null;
+  componentParentOptions: ComponentParentOption[];
+  onUpdateComponentInstance: (componentId: string, updater: (instance: ComponentInstance) => ComponentInstance) => void;
   layers: Layer[];
   onUpdateShape: (id: string, updater: (shape: Shape) => Shape) => void;
   onUpdatePotentialShared: (id: string, changes: PotentialSharedChanges) => void;
@@ -27,9 +30,18 @@ type PotentialSharedChanges = {
   layerId?: string;
 };
 
+type ComponentParentOption = {
+  componentId: string;
+  tag: string;
+  type: string;
+};
+
 export default function PropertiesPanel({
   selectedShape,
   selectionCount,
+  selectedComponentInstance,
+  componentParentOptions,
+  onUpdateComponentInstance,
   layers,
   onUpdateShape,
   onUpdatePotentialShared,
@@ -50,6 +62,14 @@ export default function PropertiesPanel({
     return getShapeBounds(selectedShape);
   }, [selectedShape]);
   const selectedLayerId = selectedShape?.layerId ?? "";
+  const selectedComponentTag = selectedComponentInstance
+    ? `${selectedComponentInstance.tagPrefix}${selectedComponentInstance.tagNumber}`
+    : "";
+
+  function updateSelectedComponent(updater: (instance: ComponentInstance) => ComponentInstance) {
+    if (!selectedComponentInstance) return;
+    onUpdateComponentInstance(selectedComponentInstance.componentId, updater);
+  }
 
   function updateLayer(shape: Shape, layerId: string): Shape {
     if (shape.type === "group") {
@@ -143,6 +163,158 @@ export default function PropertiesPanel({
               ))}
             </select>
           </label>
+        )}
+        {selectedComponentInstance && (
+          <section className="property-section">
+            <h4>{t("properties.componentSection")}: {selectedComponentTag}</h4>
+            <label className="row">
+              {t("properties.tagPrefix")}
+              <input
+                type="text"
+                value={selectedComponentInstance.tagPrefix}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    tagPrefix: event.target.value.trim().toUpperCase()
+                  }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.tagNumber")}
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={selectedComponentInstance.tagNumber}
+                onChange={(event) => {
+                  const nextNumber = Number(event.target.value);
+                  if (!Number.isInteger(nextNumber) || nextNumber < 1) return;
+                  updateSelectedComponent((instance) => ({ ...instance, tagNumber: nextNumber }));
+                }}
+              />
+            </label>
+            <label className="row">
+              {t("properties.componentType")}
+              <input
+                type="text"
+                value={selectedComponentInstance.type}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({ ...instance, type: event.target.value }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.partOf")}
+              <select
+                value={selectedComponentInstance.partOfId ?? ""}
+                onChange={(event) => {
+                  const parent = componentParentOptions.find((option) => option.componentId === event.target.value);
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    partOfId: parent?.componentId,
+                    partOfTag: parent?.tag
+                  }));
+                }}
+              >
+                <option value="">{t("properties.noParent")}</option>
+                {componentParentOptions
+                  .filter((option) => option.componentId !== selectedComponentInstance.componentId)
+                  .map((option) => (
+                    <option key={option.componentId} value={option.componentId}>
+                      {option.tag}{option.type ? ` - ${option.type}` : ""}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="row">
+              {t("properties.showLabel")}
+              <input
+                type="checkbox"
+                checked={selectedComponentInstance.label.visible}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: { ...instance.label, visible: event.target.checked }
+                  }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.labelOffsetX")}
+              <input
+                type="number"
+                value={selectedComponentInstance.label.offsetX}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: { ...instance.label, offsetX: Number(event.target.value) || 0 }
+                  }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.labelOffsetY")}
+              <input
+                type="number"
+                value={selectedComponentInstance.label.offsetY}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: { ...instance.label, offsetY: Number(event.target.value) || 0 }
+                  }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.labelSize")}
+              <input
+                type="number"
+                min={1}
+                step={0.5}
+                value={selectedComponentInstance.label.fontSize}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: { ...instance.label, fontSize: Number(event.target.value) || 1 }
+                  }))
+                }
+              />
+            </label>
+            <label className="row">
+              {t("properties.labelAlign")}
+              <select
+                value={selectedComponentInstance.label.align}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: {
+                      ...instance.label,
+                      align: event.target.value as "left" | "center" | "right"
+                    }
+                  }))
+                }
+              >
+                <option value="left">{t("properties.alignTextLeft")}</option>
+                <option value="center">{t("properties.alignTextCenter")}</option>
+                <option value="right">{t("properties.alignTextRight")}</option>
+              </select>
+            </label>
+            <label className="row">
+              {t("properties.labelRotation")}
+              <input
+                type="number"
+                step={15}
+                value={selectedComponentInstance.label.rotation}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    label: { ...instance.label, rotation: Number(event.target.value) || 0 }
+                  }))
+                }
+              />
+            </label>
+          </section>
         )}
         {selectedShape && selectedShape.type !== "group" && (
           <>

@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { jsPDF } from "jspdf";
-import type { CadFile, Component, Layer, Page, PdfSettings, Point, Shape, Tool, ViewState } from "./models";
+import type {
+  CadFile,
+  Component,
+  ComponentInstance,
+  ComponentLabel,
+  Layer,
+  Page,
+  PdfSettings,
+  Point,
+  Shape,
+  Tool,
+  ViewState
+} from "./models";
 import { builtInComponents } from "./library";
 import { createId } from "./utils/id";
 import { getShapeBounds, translateShape } from "./utils/geometry";
@@ -114,6 +127,7 @@ export default function App() {
   const [pages, setPages] = useState<Page[]>(initialPages);
   const [activePageId, setActivePageId] = useState<string>(initialPageId);
   const [components, setComponents] = useState<Component[]>([]);
+  const [componentInstances, setComponentInstances] = useState<ComponentInstance[]>([]);
   const [selectionByPage, setSelectionByPage] = useState<Record<string, string[]>>({});
   const [tool, setTool] = useState<Tool>("select");
   const [viewByPage, setViewByPage] = useState<Record<string, ViewState>>({});
@@ -127,6 +141,14 @@ export default function App() {
   const [componentExportStatus, setComponentExportStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
   const [pageMenu, setPageMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [createComponentDialog, setCreateComponentDialog] = useState<{
+    pageId: string;
+    shapeId: string;
+    tagPrefix: string;
+    type: string;
+    partOfId: string;
+    partOfTag: string;
+  } | null>(null);
   const [navigateTarget, setNavigateTarget] = useState<{ pageId: string; bounds: Bounds } | null>(null);
   const resizeRef = useRef<{ bounds: Bounds; shapes: Shape[] } | null>(null);
   const clipboardRef = useRef<{ shapes: Shape[]; offsetX: number; offsetY: number } | null>(null);
@@ -496,14 +518,66 @@ export default function App() {
     if (selection.length !== 1) return null;
     return shapes.find((shape) => shape.id === selection[0]) ?? null;
   }, [selection, shapes]);
+  const selectedComponentInstance = useMemo(() => {
+    if (!selectedShape) return null;
+    return componentInstances.find((instance) => instance.shapeIds.includes(selectedShape.id)) ?? null;
+  }, [componentInstances, selectedShape]);
+  const componentInstanceItems = useMemo(() => {
+    const findShapeById = (items: Shape[], id: string): Shape | null => {
+      for (const shape of items) {
+        if (shape.id === id) return shape;
+        if (shape.type === "group") {
+          const child = findShapeById(shape.children, id);
+          if (child) return child;
+        }
+      }
+      return null;
+    };
+
+    return componentInstances
+      .map((instance) => {
+        const page = pages.find((item) => item.id === instance.pageId);
+        const linkedShape = page
+          ? instance.shapeIds
+            .map((shapeId) => findShapeById(page.shapes, shapeId))
+            .find((shape): shape is Shape => Boolean(shape))
+          : null;
+        return {
+          instance,
+          pageName: page?.name || t("app.pageLabel", { number: Math.max(1, pages.findIndex((item) => item.id === instance.pageId) + 1) }),
+          bounds: linkedShape ? getShapeBounds(linkedShape) : null
+        };
+      })
+      .sort((a, b) => {
+        const tagA = `${a.instance.tagPrefix}${a.instance.tagNumber}`;
+        const tagB = `${b.instance.tagPrefix}${b.instance.tagNumber}`;
+        return tagA.localeCompare(tagB, undefined, { numeric: true });
+      });
+  }, [componentInstances, pages, t]);
+  const componentParentOptions = useMemo(
+    () =>
+      componentInstances
+        .map((instance) => ({
+          componentId: instance.componentId,
+          tag: `${instance.tagPrefix}${instance.tagNumber}`,
+          type: instance.type
+        }))
+        .sort((a, b) => a.tag.localeCompare(b.tag, undefined, { numeric: true })),
+    [componentInstances]
+  );
   const canGroupSelection = selection.length > 1;
   const canUngroupSelection = selection.length === 1 && selectedShape?.type === "group";
   const canMoveSelection = selection.length > 0;
+  const canCreateComponentInstance =
+    selection.length === 1 &&
+    selectedShape?.type === "group" &&
+    !componentInstances.some((instance) => instance.shapeIds.includes(selectedShape.id));
 
   type AppSnapshot = {
     layers: Layer[];
     pages: Page[];
     components: Component[];
+    componentInstances: ComponentInstance[];
     activeLayerId: string;
     activePageId: string;
     tool: Tool;
@@ -520,6 +594,7 @@ export default function App() {
       layers,
       pages,
       components,
+      componentInstances,
       activeLayerId,
       activePageId,
       tool,
@@ -548,6 +623,7 @@ export default function App() {
     setLayers(snapshot.layers);
     setPages(snapshot.pages);
     setComponents(snapshot.components);
+    setComponentInstances(snapshot.componentInstances);
     setActiveLayerId(snapshot.activeLayerId);
     setActivePageId(snapshot.activePageId);
     setTool(snapshot.tool);
@@ -590,6 +666,7 @@ export default function App() {
       if (event.key === "Escape") {
         setSelectionMenu(null);
         setPageMenu(null);
+        setCreateComponentDialog(null);
       }
     }
 
@@ -618,6 +695,7 @@ export default function App() {
     layers,
     pages,
     components,
+    componentInstances,
     activeLayerId,
     activePageId,
     tool,
@@ -648,6 +726,7 @@ export default function App() {
       delete next[pageId];
       return next;
     });
+    setComponentInstances((prev) => prev.filter((instance) => instance.pageId !== pageId));
     if (activePageId === pageId) {
       setActivePageId(remaining[0]?.id ?? "");
     }
@@ -1553,23 +1632,57 @@ export default function App() {
     return isComponentValue(value);
   }
 
-  function isCadFile(value: unknown): value is CadFile {
+  function isComponentLabel(value: unknown): value is ComponentLabel {
     return typeof value === "object" && value !== null &&
-      typeof (value as CadFile).version === "number" &&
-      Array.isArray((value as CadFile).layers) &&
-      (value as CadFile).layers.every((layer) => isLayer(layer)) &&
-      Array.isArray((value as CadFile).pages) &&
-      (value as CadFile).pages.every((page) => isPage(page)) &&
-      Array.isArray((value as CadFile).components) &&
-      (value as CadFile).components.every((component) => isComponent(component));
+      typeof (value as ComponentLabel).visible === "boolean" &&
+      (value as ComponentLabel).textMode === "tag" &&
+      typeof (value as ComponentLabel).offsetX === "number" &&
+      typeof (value as ComponentLabel).offsetY === "number" &&
+      typeof (value as ComponentLabel).fontSize === "number" &&
+      ["left", "center", "right"].includes((value as ComponentLabel).align) &&
+      typeof (value as ComponentLabel).rotation === "number";
+  }
+
+  function isComponentInstance(value: unknown): value is ComponentInstance {
+    return typeof value === "object" && value !== null &&
+      typeof (value as ComponentInstance).componentId === "string" &&
+      (typeof (value as ComponentInstance).definitionId === "undefined" ||
+        typeof (value as ComponentInstance).definitionId === "string") &&
+      typeof (value as ComponentInstance).tagPrefix === "string" &&
+      Number.isInteger((value as ComponentInstance).tagNumber) &&
+      (value as ComponentInstance).tagNumber > 0 &&
+      typeof (value as ComponentInstance).type === "string" &&
+      (typeof (value as ComponentInstance).partOfId === "undefined" ||
+        typeof (value as ComponentInstance).partOfId === "string") &&
+      (typeof (value as ComponentInstance).partOfTag === "undefined" ||
+        typeof (value as ComponentInstance).partOfTag === "string") &&
+      typeof (value as ComponentInstance).pageId === "string" &&
+      Array.isArray((value as ComponentInstance).shapeIds) &&
+      (value as ComponentInstance).shapeIds.every((shapeId) => typeof shapeId === "string") &&
+      isComponentLabel((value as ComponentInstance).label);
+  }
+
+  function isCadFile(value: unknown): value is CadFile {
+    if (typeof value !== "object" || value === null) return false;
+    const file = value as CadFile;
+    return typeof file.version === "number" &&
+      Array.isArray(file.layers) &&
+      file.layers.every((layer) => isLayer(layer)) &&
+      Array.isArray(file.pages) &&
+      file.pages.every((page) => isPage(page)) &&
+      Array.isArray(file.components) &&
+      file.components.every((component) => isComponent(component)) &&
+      Array.isArray(file.componentInstances) &&
+      file.componentInstances.every((instance) => isComponentInstance(instance));
   }
 
   function handleSaveJson() {
     const payload: CadFile = {
-      version: 3,
+      version: 4,
       layers,
       pages,
-      components
+      components,
+      componentInstances
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1591,6 +1704,7 @@ export default function App() {
         setLayers(data.layers);
         setPages(data.pages);
         setComponents(data.components);
+        setComponentInstances(data.componentInstances);
         setActiveLayerId(data.layers[0]?.id ?? "");
         setActivePageId(data.pages[0]?.id ?? "");
         setSelectionByPage({});
@@ -1685,6 +1799,80 @@ export default function App() {
     setComponentExportStatus(null);
   }
 
+  function removeComponentInstancesForShapeIds(shapeIds: string[]) {
+    if (shapeIds.length === 0) return;
+    setComponentInstances((prev) =>
+      prev.filter((instance) => !instance.shapeIds.some((shapeId) => shapeIds.includes(shapeId)))
+    );
+  }
+
+  function getNextComponentTagNumber(prefix: string) {
+    const normalizedPrefix = prefix.toUpperCase();
+    const usedNumbers = componentInstances
+      .filter((instance) => instance.tagPrefix.toUpperCase() === normalizedPrefix)
+      .map((instance) => instance.tagNumber)
+      .filter((number) => Number.isInteger(number) && number > 0);
+    return usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1;
+  }
+
+  function openCreateComponentDialog() {
+    if (!selectedShape || selectedShape.type !== "group") return;
+    if (componentInstances.some((instance) => instance.shapeIds.includes(selectedShape.id))) return;
+    setCreateComponentDialog({
+      pageId: activePageId,
+      shapeId: selectedShape.id,
+      tagPrefix: "",
+      type: t("app.componentDefaultType"),
+      partOfId: "",
+      partOfTag: ""
+    });
+  }
+
+  function handleCreateComponentSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!createComponentDialog) return;
+    const tagPrefix = createComponentDialog.tagPrefix.trim().toUpperCase();
+    if (!tagPrefix) return;
+    const tagNumber = getNextComponentTagNumber(tagPrefix);
+    const componentType = createComponentDialog.type.trim() || t("app.componentDefaultType");
+    const parentComponent = componentParentOptions.find((option) => option.componentId === createComponentDialog.partOfId);
+    const partOfTag = parentComponent?.tag ?? createComponentDialog.partOfTag.trim();
+    const targetPage = pages.find((page) => page.id === createComponentDialog.pageId);
+    const targetShape = targetPage?.shapes.find((shape) => shape.id === createComponentDialog.shapeId);
+    if (!targetPage || !targetShape || targetShape.type !== "group") return;
+    if (componentInstances.some((instance) => instance.shapeIds.includes(createComponentDialog.shapeId))) return;
+
+    setComponentInstances((prev) => [
+      ...prev,
+      {
+        componentId: createId("componentInstance"),
+        tagPrefix,
+        tagNumber,
+        type: componentType,
+        partOfId: parentComponent?.componentId,
+        partOfTag: partOfTag || undefined,
+        pageId: createComponentDialog.pageId,
+        shapeIds: [createComponentDialog.shapeId],
+        label: {
+          visible: true,
+          textMode: "tag",
+          offsetX: 6,
+          offsetY: -4,
+          fontSize: 3.5,
+          align: "left",
+          rotation: 0
+        }
+      }
+    ]);
+    setCreateComponentDialog(null);
+  }
+
+  function updateComponentInstance(componentId: string, updater: (instance: ComponentInstance) => ComponentInstance) {
+    setComponentInstances((prev) =>
+      prev.map((instance) => (instance.componentId === componentId ? updater(instance) : instance))
+    );
+  }
+
   function handleExportComponent(id: string) {
     const component = components.find((item) => item.id === id);
     if (!component) return;
@@ -1725,6 +1913,7 @@ export default function App() {
   function handleDeleteSelection() {
     if (selection.length === 0) return;
     updateActivePageShapes((prev) => prev.filter((shape) => !selection.includes(shape.id)));
+    removeComponentInstancesForShapeIds(selection);
     setSelection([]);
   }
 
@@ -1755,6 +1944,7 @@ export default function App() {
       ...prev.filter((shape) => shape.id !== groupShape.id),
       ...groupShape.children
     ]);
+    removeComponentInstancesForShapeIds([groupShape.id]);
     setSelection(groupShape.children.map((child) => child.id));
   }
 
@@ -1803,6 +1993,7 @@ export default function App() {
     if (selection.length === 0) return;
     handleCopySelection();
     updateActivePageShapes((prev) => prev.filter((shape) => !selection.includes(shape.id)));
+    removeComponentInstancesForShapeIds(selection);
     setSelection([]);
   }
 
@@ -2015,6 +2206,64 @@ export default function App() {
       pdf.text(text, mapX(originX), mapY(originY), { align: "left", baseline: "top", angle });
     };
 
+    const findShapeById = (items: Shape[], id: string): Shape | null => {
+      for (const shape of items) {
+        if (shape.id === id) return shape;
+        if (shape.type === "group") {
+          const child = findShapeById(shape.children, id);
+          if (child) return child;
+        }
+      }
+      return null;
+    };
+
+    const isShapeVisibleInPdf = (shape: Shape): boolean => {
+      if (shape.type === "group") {
+        return visibleLayers.has(shape.layerId) && shape.children.some((child) => isShapeVisibleInPdf(child));
+      }
+      return visibleLayers.has(shape.layerId);
+    };
+
+    const drawAnchoredPdfText = (
+      text: string,
+      x: number,
+      y: number,
+      align: "left" | "center" | "right",
+      rotation: number
+    ) => {
+      const textWidth = pdf.getTextWidth(text);
+      const startOffset = align === "center" ? -textWidth / 2 : align === "right" ? -textWidth : 0;
+      const pdfAngle = -rotation;
+      const angleRad = (pdfAngle * Math.PI) / 180;
+      const originX = x + Math.cos(angleRad) * startOffset;
+      const originY = y - Math.sin(angleRad) * startOffset;
+      pdf.text(text, mapX(originX), mapY(originY), {
+        align: "left",
+        angle: pdfAngle,
+        baseline: "alphabetic"
+      });
+    };
+
+    const drawComponentLabels = (page: Page) => {
+      componentInstances
+        .filter((instance) => instance.pageId === page.id && instance.label.visible)
+        .forEach((instance) => {
+          const linkedShape = instance.shapeIds
+            .map((shapeId) => findShapeById(page.shapes, shapeId))
+            .find((shape): shape is Shape => Boolean(shape));
+          if (!linkedShape || !isShapeVisibleInPdf(linkedShape)) return;
+
+          const bounds = getShapeBounds(linkedShape);
+          const x = bounds.minX + instance.label.offsetX;
+          const y = bounds.minY + instance.label.offsetY;
+          const tag = `${instance.tagPrefix}${instance.tagNumber}`;
+
+          pdf.setTextColor("#111827");
+          pdf.setFontSize(Math.max(1, instance.label.fontSize * mmToPt));
+          drawAnchoredPdfText(tag, x, y, instance.label.align, instance.label.rotation);
+        });
+    };
+
     exportPages.forEach((page, pageIndex) => {
       if (pageIndex > 0) pdf.addPage([rawWidth, rawHeight], pdfSettings.orientation);
 
@@ -2204,6 +2453,7 @@ export default function App() {
       };
 
       page.shapes.forEach((shape) => drawShape(shape));
+      drawComponentLabels(page);
       const junctions = collectPotentialJunctions(page.shapes);
       if (junctions.length > 0) {
         junctions.forEach((junction) => {
@@ -2260,6 +2510,7 @@ export default function App() {
           totalPages={pages.length}
           pageId={activePageId}
           placingComponentId={placingComponentId}
+          componentInstances={componentInstances}
           nextPotentialNumber={nextPotentialNumber}
           potentialRender={potentialRender}
           onViewChange={setView}
@@ -2278,7 +2529,7 @@ export default function App() {
           onResizeSelection={handleResizeSelection}
           onResizeEnd={handleResizeEnd}
           onSelectionContextMenu={(x, y) => {
-            if (!canGroupSelection && !canUngroupSelection && !canMoveSelection) return;
+            if (!canGroupSelection && !canCreateComponentInstance && !canUngroupSelection && !canMoveSelection) return;
             setSelectionMenu({ x, y });
           }}
           onCopySelection={handleCopySelection}
@@ -2299,6 +2550,9 @@ export default function App() {
         <RightPanel
           selectedShape={selectedShape}
           selectionCount={selection.length}
+          selectedComponentInstance={selectedComponentInstance}
+          componentParentOptions={componentParentOptions}
+          onUpdateComponentInstance={updateComponentInstance}
           onUpdateShape={(id, updater) => updateShape(id, updater)}
           onUpdatePotentialShared={updatePotentialShared}
           onUpdatePotentialNumber={updatePotentialNumber}
@@ -2307,6 +2561,11 @@ export default function App() {
           onAlignSelection={alignSelection}
           onRotateSelection={rotateSelection}
           onMirrorSelection={mirrorSelection}
+          componentInstanceItems={componentInstanceItems}
+          onNavigateToComponent={(pageId, bounds) => {
+            setActivePageId(pageId);
+            setNavigateTarget({ pageId, bounds });
+          }}
           potentialList={potentialList}
           onRenumberPotentials={handleRenumberPotentials}
           onNavigateToPotential={(pageId, bounds) => {
@@ -2361,6 +2620,9 @@ export default function App() {
           +
         </button>
       </div>
+      <div className="author-signature" aria-hidden="true">
+        Kerschbaumer – IFC Luzerna
+      </div>
       {pageMenu && (
         <div className="context-menu" style={{ top: pageMenu.y, left: pageMenu.x }}>
           <button
@@ -2387,6 +2649,18 @@ export default function App() {
               }}
             >
               {t("app.groupSelection")}
+            </button>
+          )}
+          {canCreateComponentInstance && (
+            <button
+              type="button"
+              className="context-menu-item"
+              onClick={() => {
+                openCreateComponentDialog();
+                setSelectionMenu(null);
+              }}
+            >
+              {t("app.createComponent")}
             </button>
           )}
           {canUngroupSelection && (
@@ -2420,6 +2694,83 @@ export default function App() {
               ))}
             </>
           )}
+        </div>
+      )}
+      {createComponentDialog && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setCreateComponentDialog(null)}>
+          <form
+            className="modal-panel"
+            onSubmit={handleCreateComponentSubmit}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="modal-header">
+              <h3>{t("app.createComponentTitle")}</h3>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setCreateComponentDialog(null)}
+                aria-label={t("app.cancel")}
+              >
+                ×
+              </button>
+            </header>
+            <div className="modal-body">
+              <label className="row">
+                {t("app.componentPrefixPrompt")}
+                <input
+                  type="text"
+                  value={createComponentDialog.tagPrefix}
+                  autoFocus
+                  onChange={(event) =>
+                    setCreateComponentDialog((prev) =>
+                      prev ? { ...prev, tagPrefix: event.target.value.toUpperCase() } : prev
+                    )
+                  }
+                />
+              </label>
+              <label className="row">
+                {t("app.componentTypePrompt")}
+                <input
+                  type="text"
+                  value={createComponentDialog.type}
+                  onChange={(event) =>
+                    setCreateComponentDialog((prev) => prev ? { ...prev, type: event.target.value } : prev)
+                  }
+                />
+              </label>
+              <label className="row">
+                {t("app.componentPartOfPrompt")}
+                <select
+                  value={createComponentDialog.partOfId}
+                  onChange={(event) =>
+                    setCreateComponentDialog((prev) => prev ? { ...prev, partOfId: event.target.value } : prev)
+                  }
+                >
+                  <option value="">{t("app.componentNoParent")}</option>
+                  {componentParentOptions.map((option) => (
+                    <option key={option.componentId} value={option.componentId}>
+                      {option.tag}{option.type ? ` - ${option.type}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="muted small">
+                {t("app.componentTagPreview", {
+                  tag: createComponentDialog.tagPrefix.trim()
+                    ? `${createComponentDialog.tagPrefix.trim().toUpperCase()}${getNextComponentTagNumber(createComponentDialog.tagPrefix)}`
+                    : "-"
+                })}
+              </p>
+            </div>
+            <footer className="modal-actions">
+              <button type="button" className="tool-button" onClick={() => setCreateComponentDialog(null)}>
+                {t("app.cancel")}
+              </button>
+              <button type="submit" className="tool-button primary" disabled={!createComponentDialog.tagPrefix.trim()}>
+                {t("app.create")}
+              </button>
+            </footer>
+          </form>
         </div>
       )}
     </div>

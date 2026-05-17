@@ -103,6 +103,29 @@ export type LibraryComponent = Component & {
   fileName?: string;
 };
 
+export type ComponentLabel = {
+  visible: boolean;
+  textMode: "tag";
+  offsetX: number;
+  offsetY: number;
+  fontSize: number;
+  align: "left" | "center" | "right";
+  rotation: number;
+};
+
+export type ComponentInstance = {
+  componentId: string;
+  definitionId?: string;
+  tagPrefix: string;
+  tagNumber: number;
+  type: string;
+  partOfId?: string;
+  partOfTag?: string;
+  pageId: string;
+  shapeIds: string[];
+  label: ComponentLabel;
+};
+
 export type AppLibraryComponentFile = {
   schema: "wirepanel-cad.app-library-component" | "basic2dcad.app-library-component";
   version: 1;
@@ -120,6 +143,7 @@ export type CadFile = {
   layers: Layer[];
   pages: Page[];
   components: Component[];
+  componentInstances: ComponentInstance[];
 };
 
 export type ViewState = {

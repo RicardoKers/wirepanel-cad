@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { Layer, LineStyle, PdfSettings, Point, Shape, Tool, ViewState } from "../models";
+import type { ComponentInstance, Layer, LineStyle, PdfSettings, Point, Shape, Tool, ViewState } from "../models";
 import { angleBetween, arcToPath, distance, getShapeBounds, normalizeAngle } from "../utils/geometry";
 import { replacePlaceholders } from "../utils/text";
 import { createId } from "../utils/id";
@@ -50,6 +50,7 @@ type CanvasViewProps = {
   totalPages: number;
   pageId: string;
   placingComponentId: string | null;
+  componentInstances: ComponentInstance[];
   nextPotentialNumber: number;
   potentialRender?: Record<string, PotentialRenderInfo>;
   onViewChange: (view: ViewState) => void;
@@ -217,6 +218,7 @@ export default function CanvasView({
   totalPages,
   pageId,
   placingComponentId,
+  componentInstances,
   nextPotentialNumber,
   potentialRender,
   onViewChange,
@@ -1242,6 +1244,31 @@ export default function CanvasView({
     .filter((shape) => isShapeVisible(shape))
     .map((shape) => renderShape(shape, false));
 
+  const renderedComponentLabels = componentInstances
+    .filter((instance) => instance.pageId === pageId && instance.label.visible)
+    .map((instance) => {
+      const linkedShape = shapes.find((shape) => instance.shapeIds.includes(shape.id));
+      if (!linkedShape || !isShapeVisible(linkedShape)) return null;
+      const bounds = getShapeBounds(linkedShape);
+      const x = bounds.minX + instance.label.offsetX;
+      const y = bounds.minY + instance.label.offsetY;
+      const tag = `${instance.tagPrefix}${instance.tagNumber}`;
+      return (
+        <text
+          key={instance.componentId}
+          className="component-label"
+          x={x}
+          y={y}
+          fontSize={instance.label.fontSize}
+          textAnchor={instance.label.align === "center" ? "middle" : instance.label.align === "right" ? "end" : "start"}
+          transform={instance.label.rotation ? `rotate(${instance.label.rotation} ${x} ${y})` : undefined}
+          pointerEvents="none"
+        >
+          {tag}
+        </text>
+      );
+    });
+
   function renderShape(shape: Shape, suppressPointer: boolean): React.ReactNode {
     const isSelected = selection.includes(shape.id);
     const className = isSelected ? "shape selected" : "shape";
@@ -1944,6 +1971,9 @@ export default function CanvasView({
             </>
           )}
           {renderedShapes}
+          <g className="component-labels" pointerEvents="none">
+            {renderedComponentLabels}
+          </g>
           {potentialJunctions.length > 0 && (
             <g className="potential-junctions" pointerEvents="none">
               {potentialJunctions.map((junction) => (

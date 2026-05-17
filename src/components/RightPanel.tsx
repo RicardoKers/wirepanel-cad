@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Layer, PdfSettings, Shape } from "../models";
+import type { ComponentInstance, Layer, PdfSettings, Shape } from "../models";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
 import SettingsPanel from "./SettingsPanel";
 import PotentialsPanel from "./PotentialsPanel";
+import ComponentInstancesPanel from "./ComponentInstancesPanel";
 
 type RightPanelProps = {
   selectedShape: Shape | null;
   selectionCount: number;
+  selectedComponentInstance: ComponentInstance | null;
+  componentParentOptions: ComponentParentOption[];
+  onUpdateComponentInstance: (componentId: string, updater: (instance: ComponentInstance) => ComponentInstance) => void;
   onUpdateShape: (id: string, updater: (shape: Shape) => Shape) => void;
   onUpdatePotentialShared: (id: string, changes: PotentialSharedChanges) => void;
   onUpdatePotentialNumber: (id: string, nextNumber: number) => void;
@@ -17,6 +21,8 @@ type RightPanelProps = {
   onAlignSelection: (mode: "left" | "right" | "top" | "bottom" | "centerX" | "centerY") => void;
   onRotateSelection: (degrees: number) => void;
   onMirrorSelection: (axis: "horizontal" | "vertical") => void;
+  componentInstanceItems: ComponentInstanceListItem[];
+  onNavigateToComponent: (pageId: string, bounds: Bounds) => void;
   potentialList: { number: number; name: string; diameter: number | null; pageId: string; bounds: Bounds }[];
   onRenumberPotentials: () => void;
   onNavigateToPotential: (pageId: string, bounds: Bounds) => void;
@@ -42,6 +48,16 @@ type RightPanelProps = {
 };
 
 type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
+type ComponentInstanceListItem = {
+  instance: ComponentInstance;
+  pageName: string;
+  bounds: Bounds | null;
+};
+type ComponentParentOption = {
+  componentId: string;
+  tag: string;
+  type: string;
+};
 type PotentialSharedChanges = {
   lineColor?: string;
   lineWidth?: number;
@@ -51,13 +67,16 @@ type PotentialSharedChanges = {
   layerId?: string;
 };
 
-type TabId = "properties" | "potentials" | "layers" | "settings";
+type TabId = "properties" | "components" | "potentials" | "layers" | "settings";
 
-const tabs: TabId[] = ["properties", "potentials", "layers", "settings"];
+const tabs: TabId[] = ["properties", "components", "potentials", "layers", "settings"];
 
 export default function RightPanel({
   selectedShape,
   selectionCount,
+  selectedComponentInstance,
+  componentParentOptions,
+  onUpdateComponentInstance,
   onUpdateShape,
   onUpdatePotentialShared,
   onUpdatePotentialNumber,
@@ -66,6 +85,8 @@ export default function RightPanel({
   onAlignSelection,
   onRotateSelection,
   onMirrorSelection,
+  componentInstanceItems,
+  onNavigateToComponent,
   potentialList,
   onRenumberPotentials,
   onNavigateToPotential,
@@ -113,6 +134,9 @@ export default function RightPanel({
           <PropertiesPanel
             selectedShape={selectedShape}
             selectionCount={selectionCount}
+            selectedComponentInstance={selectedComponentInstance}
+            componentParentOptions={componentParentOptions}
+            onUpdateComponentInstance={onUpdateComponentInstance}
             layers={layers}
             onUpdateShape={onUpdateShape}
             onUpdatePotentialShared={onUpdatePotentialShared}
@@ -130,6 +154,12 @@ export default function RightPanel({
             potentials={potentialList}
             onNavigateToPotential={onNavigateToPotential}
             onRenumberPotentials={onRenumberPotentials}
+          />
+        )}
+        {activeTab === "components" && (
+          <ComponentInstancesPanel
+            items={componentInstanceItems}
+            onNavigateToComponent={onNavigateToComponent}
           />
         )}
         {activeTab === "layers" && (

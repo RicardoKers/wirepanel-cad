@@ -156,6 +156,20 @@ body {
   padding: 0;
 }
 
+.author-signature {
+  position: fixed;
+  right: 20px;
+  bottom: 56px;
+  z-index: 20;
+  pointer-events: none;
+  color: rgba(230, 237, 243, 0.32);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+
 .sidebar,
 .right-panel {
   display: flex;
@@ -552,6 +566,16 @@ body {
   font-weight: 500;
 }
 
+.component-label {
+  fill: #111827;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: rgba(247, 249, 251, 0.92);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .error-text {
   margin: 0;
   color: #ff9f9f;
@@ -650,6 +674,47 @@ body {
   gap: 8px;
 }
 
+.component-instance-list {
+  gap: 8px;
+}
+
+.component-instance-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #10151d;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.component-instance-row:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.component-instance-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.component-instance-tag {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.component-instance-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .component-thumb {
   width: 100%;
   height: 78px;
@@ -706,6 +771,76 @@ body {
   letter-spacing: 0.4px;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 8, 12, 0.68);
+}
+
+.modal-panel {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #0f141b;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.modal-body .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.modal-body input,
+.modal-body select {
+  width: 180px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 9px;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+}
+
 .grid-panel .row {
   display: flex;
   align-items: center;
@@ -727,6 +862,23 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.property-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.property-section h4 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .properties-body input[type="number"],

@@ -1,143 +1,685 @@
-Summary (updated)
+WirePanel CAD - project handoff and next work plan
+Updated: 2026-05-17
 
-Project: d:\06_Temporary\wirepanel-cad\wirepanel-cad
+Project
+- Local path: d:\06_Temporary\wirepanel-cad\wirepanel-cad
+- GitHub repository: https://github.com/RicardoKers/wirepanel-cad
+- GitHub Pages URL: https://ricardokers.github.io/wirepanel-cad/
+- Main branch: main
+- Vite base path: /wirepanel-cad/
 
-Current state
-- The app is a browser-based 2D CAD for industrial electrical drawings built with React, TypeScript and Vite.
+Current repo state
+- The project was renamed from Basic2DCAD/basic2dcad to WirePanel CAD/wirepanel-cad.
+- Rename changes were committed and pushed in commit 5801b0a: "Rename project to wirepanel-cad".
+- Git sometimes reports "dubious ownership" for this local directory. Use this pattern when needed:
+  git -c safe.directory=D:/06_Temporary/wirepanel-cad/wirepanel-cad status --short
+- The local development server was started successfully at:
+  http://localhost:5174/wirepanel-cad/
+- Port 5173 was already in use, so Vite selected 5174.
 - `npm run build` passes.
-- The project is connected to GitHub at `https://github.com/RicardoKers/wirepanel-cad`.
-- GitHub Pages deployment is configured for the project site at `https://ricardokers.github.io/wirepanel-cad/`.
-- Code structure, comments and variable names remain in English.
+- Vite still shows the known warning that one production chunk is larger than 500 kB.
+- Phase 1 of intelligent components has been started and implemented at the data/state level.
+- The app now has model/state/save/load/history support for `componentInstances`.
+- Phase 2 has been started with a simple right-click workflow for creating component instances from grouped shapes.
+- Linked tag rendering on the canvas is implemented.
+- Properties-panel editing for basic component metadata and label settings is implemented.
 
-Environment and repo
-- Node and npm were revalidated after machine format and reinstall.
-- Dependencies install correctly.
-- `.gitignore` was improved and `tsconfig.tsbuildinfo` is no longer tracked.
-- The repository is configured for automatic deployment on push to `main` through `.github/workflows/deploy.yml`.
-- `vite.config.ts` now uses `base: "/wirepanel-cad/"` for GitHub Pages.
+Uncommitted UI change currently present
+- A discreet author signature was added near the lower-right corner of the application:
+  Kerschbaumer - IFC Luzerna
+- Files changed by that work:
+  - src/App.tsx
+  - src/styles.css
+- The signature is implemented as a fixed overlay with `pointer-events: none`.
+- It is positioned above the bottom page tabs so it does not block normal navigation.
+- This change has not yet been committed at the time this summary was updated.
 
-Main functional features
-- Drawing tools: select, line, potential, circle, arc, text, pin and pan.
-- Selection supports move, resize, rotation, mirroring, alignment, group and ungroup.
-- Multi-page projects with page tabs.
-- Layers with visibility, locking, rename, active layer and move-to-layer workflows.
-- Grid and snap settings are available in Settings.
-- Fit-to-page exists in the toolbar and uses the same page framing logic as the initial auto-fit.
-
-Potentials and pins
-- Potentials can connect to pins while drawing.
-- A nearby pin is highlighted and the potential end snaps to it.
-- When a potential end is connected to a pin, the arrow and edge label on that side are hidden.
-- Potentials can also connect to other potentials with T-connections and junction behavior.
-- Same-number potentials now connect not only during initial drawing, but also after dragging a potential or dragging one of its endpoints onto another potential with the same number.
-- Renumbering is available from the Potentials tab and follows visual order across pages.
-
-Internationalization
-- Added i18n with English and Brazilian Portuguese using `i18next` and `react-i18next`.
-- Language selection is available in Settings and persisted in `localStorage`.
-- Main visible UI is localized.
-- Portuguese accent issues were fixed by using robust string encoding in translation resources.
-
-Project format
-- Project import/export now accepts only the current strict schema.
-- `CadFile` uses only:
-  - `version`
-  - `layers`
-  - `pages`
-  - `components`
-- Legacy or partial schemas are intentionally not supported anymore.
-
-Components architecture
-- The component system was refactored into two sources:
-  - App Library
-  - Project Components
-- App Library components are loaded from JSON files in `src/library/components/*.json`.
-- Project Components are stored inside the project JSON file.
-- The built-in library is loaded through `src/library/index.ts`.
-- Shared component helpers live in `src/utils/components.ts`.
-- The components panel supports search and collapsible categories for the App Library.
-- Redundant metadata text under component names was removed from the component cards to keep the UI cleaner.
-
-Component workflow
-- To create a reusable built-in component:
-  1. draw the symbol on the canvas
-  2. save it as a project component
-  3. click `Download JSON`
-  4. save the generated file
-  5. later place that file in `src/library/components`
-  6. rebuild and republish the app
-- This replaced the earlier development-only write-to-disk export flow.
-- The current approach works in production and is better for collaboration because contributors can design components in the running app and send JSON files.
-- A bug where grouped components were inserted with a large offset was fixed. Grouped shapes no longer receive duplicated translation on placement.
-
-Text, links and placeholders
-- Text objects support optional internal links with `linkEnabled` and `linkTarget`.
-- Navigation occurs with `Ctrl` or `Cmd` plus click.
-- Special text placeholders currently supported:
-  - `<project>`
-  - `<drawing>`
-  - `<author>`
-  - `<page>`
-  - `<n_pages>`
-- These placeholders are resolved both on canvas and during PDF export.
-
-Manual and documentation
-- The app now includes built-in HTML manuals instead of Markdown manuals.
-- Files:
-  - `public/help/manual.en.html`
-  - `public/help/manual.pt-BR.html`
-- A toolbar `Help` button opens the correct manual according to the active language.
-- Manual cross-links were made relative so they work correctly under the GitHub Pages base path.
-- `README.md` was rewritten and expanded substantially.
-- The README now documents:
-  - overview and tech stack
-  - current features
-  - local development and build
-  - component workflow
-  - i18n
-  - HTML manuals
-  - PDF export
-  - GitHub Pages deployment
-
-Publishing
-- The app is prepared for GitHub Pages project-site hosting.
-- Expected published URL:
-  - `https://ricardokers.github.io/wirepanel-cad/`
-- Pushes to `main` trigger automatic build and deploy through GitHub Actions.
-- If the workflow build fails, the previous deployed version remains active.
+Current application overview
+- Browser-based 2D CAD for industrial electrical drawings.
+- Built with React, TypeScript, Vite, jsPDF, i18next and react-i18next.
+- The app is client-side only.
+- Project save/load is handled through JSON file download/upload.
+- PDF export runs in the browser and now includes visible component labels.
+- Built-in component library is bundled at build time.
 
 Important files
-- `src/App.tsx`
-  - main app state and workflows
-  - potential reconciliation after edits
+- src/App.tsx
+  - Main app state and workflows.
+  - Project save/load.
+  - Component save/export/import placement.
+  - Potential reconciliation after edits.
+  - PDF export.
+  - Page tabs and context menus.
+- src/components/CanvasView.tsx
+  - Canvas rendering and user interaction.
+  - Selection, dragging, resizing, drawing tools, snapping, fit-to-page behavior.
+  - Shape rendering for SVG canvas.
+- src/components/ComponentsPanel.tsx
+  - App Library and Project Components panel.
+  - Search, category collapse, project component export/delete/rename actions.
+- src/components/RightPanel.tsx
+  - Main right-side tab host.
+  - Properties, potentials, layers and settings tabs.
+- src/components/PropertiesPanel.tsx
+  - Shape property editing.
+  - Selection actions such as delete, move, rotate, mirror and align.
+- src/components/SettingsPanel.tsx
+  - Language, PDF settings, grid and snapping settings.
+- src/components/PotentialsPanel.tsx
+  - Potential list and renumbering workflow.
+- src/components/LayersPanel.tsx
+  - Layer creation, deletion, renaming, locking, visibility and active layer.
+- src/models.ts
+  - Core data model types.
+- src/utils/components.ts
+  - Component creation, placement, JSON export helpers and component file validation.
+- src/library/index.ts
+  - Loads bundled JSON components from src/library/components/*.json.
+- src/i18n/resources.ts
+  - English and Brazilian Portuguese UI strings.
+- src/styles.css
+  - Global application layout and visual styling.
+- public/help/manual.en.html
+- public/help/manual.pt-BR.html
+- .github/workflows/deploy.yml
+- vite.config.ts
+- README.md
+
+Existing data model summary
+- `CadFile` currently contains:
+  - version
+  - layers
+  - pages
+  - components
+  - componentInstances (required; added in Phase 1)
+- `Page` contains:
+  - id
+  - name
+  - shapes
+- `Component` currently represents a reusable graphical component definition:
+  - id
+  - name
+  - category
+  - description
+  - tags
+  - shapes
+  - gridOffsetX
+  - gridOffsetY
+- `LibraryComponent` extends `Component` with:
+  - source: "app" | "project"
+  - readOnly
+  - fileName
+- `AppLibraryComponentFile` now accepts both schemas:
+  - wirepanel-cad.app-library-component
+  - basic2dcad.app-library-component
+- The basic2dcad schema is intentionally kept only for legacy component JSON compatibility.
+- Phase 1 added:
+  - `ComponentLabel`
+  - `ComponentInstance`
+  - required `CadFile.componentInstances`
+- Component instances store tags as separate `tagPrefix` and `tagNumber` fields.
+- The final display tag is derived as `tagPrefix + tagNumber`, for example K1 or QF2.
+- Saved project files now use version 4.
+- Old project-file compatibility is no longer required. New project files must include `componentInstances`.
+
+Existing component workflow
+- User can draw shapes, select them and save them as a project component.
+- Project components are stored inside the project JSON file.
+- Built-in app components are loaded from JSON files in src/library/components.
+- Component placement currently inserts graphical shapes into the active page.
+- Existing components are mostly "graphical blocks", not yet intelligent electrical/project entities.
+
+Design direction for intelligent components
+- Goal: evolve from graphical blocks to intelligent project components.
+- A component instance should have an invisible unique `componentId`.
+- The visible electrical tag should be derived from two editable properties:
+  - `tagPrefix`, for example K, S, QF, M or X.
+  - `tagNumber`, for example 1, 2 or 3.
+- The final visible tag is composed as `tagPrefix + tagNumber`, for example K1, K2, S1 or QF1.
+- During component creation, the user enters only the prefix. The app generates the next serial number for that prefix.
+- The visible tag should not be an ordinary loose text shape.
+- It should be a label linked to a component instance.
+- If the user changes a component prefix or number, all linked visible labels should be able to update later.
+- Components should support a relationship field such as `partOf`.
+- Example:
+  - A contactor coil is component K1.
+  - A normally-open auxiliary contact may also show K1.
+  - The auxiliary contact can have `partOf` pointing to the main K1 component.
+- This relationship prepares the app for future cross-references.
+- Future cross-references should be able to show where related component parts are located in the project, such as page and marker address.
+
+Core concept distinction
+- `ComponentDefinition`
+  - Reusable graphical/template data.
+  - Similar to the current Component object.
+  - Can live in App Library or Project Components.
+- `ComponentInstance`
+  - A real placed component in the project.
+  - Has an invisible unique id.
+  - Has electrical metadata such as tag prefix, tag number, type and partOf.
+  - Owns or references one or more shapes on the page.
+- `ComponentLabel`
+  - A visible label attached to a component instance.
+  - Stores relative position, font size, alignment and visibility.
+  - Renders like text on the canvas, but is not independent loose text.
+
+Recommended model evolution
+- Keep existing project compatibility as much as possible.
+- Add new optional structures rather than replacing everything at once.
+- Suggested additions:
+  - `ProjectComponentInstance`
+    - id: string
+    - definitionId?: string
+    - tagPrefix: string
+    - tagNumber: number
+    - type: string
+    - partOfId?: string
+    - partOfTag?: string
+    - pageId: string
+    - shapeIds: string[]
+    - label: ComponentLabel
+  - `ComponentLabel`
+    - visible: boolean
+    - textMode: "tag"
+    - offsetX: number
+    - offsetY: number
+    - fontSize: number
+    - align: "left" | "center" | "right"
+    - rotation: number
+- Suggested `CadFile` future shape:
+  - version
+  - layers
+  - pages
+  - components
+  - componentInstances
+- `componentInstances` is required in the new project format. Old project files do not need to be supported.
+
+Open naming decision
+- Current `Component` type name is used for reusable definitions.
+- To avoid confusion, consider renaming in code later:
+  - Current `Component` -> `ComponentDefinition`
+  - New placed entity -> `ComponentInstance`
+- This can be done gradually, but a direct rename may touch many files.
+- Safer path:
+  - First add `ComponentInstance` while keeping the current `Component` type.
+  - Later perform a cleanup rename if the model stabilizes.
+
+Planned user workflow
+- User draws a symbol.
+- User groups the symbol.
+- User right-clicks the group.
+- Context menu offers: "Create component".
+- User enters:
+  - Type
+  - Tag prefix
+  - Optional description/category
+  - Optional `Part of`
+- The app creates a component instance linked to the selected grouped shapes.
+- The component gets a linked visible tag label.
+- The label appears beside the component.
+- User can move/resize the label independently while keeping it linked.
+- User can select the component and edit its metadata from the properties panel.
+- Later, the app can list all component instances and their relationships.
+
+Implementation roadmap
+
+Phase 0 - Stabilize current baseline
+- Confirm whether the author signature should be committed before larger work starts.
+- Run:
+  npm run build
+- User test:
+  - Open http://localhost:5174/wirepanel-cad/
+  - Confirm the signature appears in the lower-right area.
+  - Confirm it does not block page tabs or canvas interaction.
+- Expected result:
+  - Build passes.
+  - App remains usable.
+  - Signature looks discreet.
+
+Phase 1 - Data model groundwork
+- Add types in src/models.ts:
+  - ComponentInstance
+  - ComponentLabel
+  - ComponentType if useful
+- Extend CadFile with required `componentInstances: ComponentInstance[]`.
+- Add React state in src/App.tsx:
+  - componentInstances
+- Include componentInstances in:
+  - buildSnapshot
+  - clone/restore history
+  - undo/redo
   - project save/load
-  - PDF export
-- `src/components/CanvasView.tsx`
-  - canvas rendering, interaction, snap, fit-to-page behavior
-- `src/components/ComponentsPanel.tsx`
-  - app/project library UI, search, collapsible categories, export actions
-- `src/components/Toolbar.tsx`
-  - tool buttons, fit-to-page, project actions, help link
-- `src/i18n/index.ts`
-  - i18n initialization and persistence
-- `src/i18n/resources.ts`
-  - translations for `en` and `pt-BR`
-- `src/library/index.ts`
-  - built-in library loader
-- `src/utils/components.ts`
-  - component creation, placement and JSON export helpers
-- `public/help/manual.en.html`
-- `public/help/manual.pt-BR.html`
-- `.github/workflows/deploy.yml`
-- `vite.config.ts`
-- `README.md`
+- Project import:
+  - Require `componentInstances`.
+  - Keep strict validation for all required fields.
+- Tests:
+  - `npm run build`
+  - Create a simple drawing.
+  - Save project JSON.
+  - Reopen project JSON.
+  - Confirm there are no errors.
+- User validation:
+  - Send back whether save/load still works normally.
+  - If a project file fails to load, share the browser error or describe what happened.
 
-Current notes
-- The Vite production build still shows a chunk-size warning over 500 kB, but the build succeeds.
-- Local development continues to work normally with `npm run dev`.
-- The app is client-side only for drawing, project save/load and PDF export.
+Phase 2 - Create component from group
+- Extend selection context menu in src/App.tsx. Implemented.
+- When exactly one selected shape is a group, show. Implemented:
+  - Create component
+- Create a modal or small form for component metadata. Current temporary implementation uses browser prompts.
+- Minimum fields for first version:
+  - Tag prefix
+  - Type
+  - Part of
+- Reasonable initial defaults:
+  - Type: empty or "Component"
+  - Tag number: next available serial generated for the entered prefix.
+  - Part of: empty.
+- On confirm:
+  - Create a ComponentInstance with a unique id. Implemented.
+  - Link it to the selected group shape id or child shape ids. Implemented using the group shape id.
+  - Add default label settings. Implemented in data, not rendered yet.
+- Important design choice:
+  - Prefer linking the instance to the selected group id initially.
+  - This is simpler and preserves the user mental model: the group is the component body.
+- Tests:
+  - `npm run build`
+  - Select a group.
+  - Right-click.
+  - Confirm "Create component" appears.
+  - Create K1.
+  - Save and reload the project.
+  - Confirm K1 metadata persists.
+- Current expected result:
+  - After creating a component, no visible tag appears yet.
+  - Save the project and inspect the JSON.
+  - `componentInstances` should contain an item with `tagPrefix`, `tagNumber`, `type`, optional `partOfTag`, `pageId`, `shapeIds` and `label`.
+  - The same group should not show "Create component" again after it already has an instance.
+- User validation:
+  - Confirm whether the menu flow feels natural.
+  - Confirm whether creating from a group matches expected CAD workflow.
 
-If continuing later
-- Run `npm run dev` and validate the published GitHub Pages version after future UI changes.
-- If desired, the next engineering improvement could be bundle splitting to reduce the Vite chunk-size warning.
-- If desired, continue expanding the built-in component library by generating JSON files from project components.
+Phase 3 - Render linked component tag label
+- Add component label rendering to CanvasView. Implemented.
+- The label should display the current derived instance tag. Implemented as `tagPrefix + tagNumber`.
+- It should not be a normal TextShape. Implemented as a separate SVG layer from `componentInstances`.
+- It should render from componentInstances data. Implemented.
+- It should follow the component when the component/group moves. Implemented by deriving position from linked group bounds.
+- Label position should be stored relative to the component bounds or group origin.
+- Recommended first approach:
+  - Compute group/component bounds.
+  - Label absolute position = bounds.minX + offsetX, bounds.minY + offsetY.
+  - Default offset near upper-right of bounds.
+- Label should use the existing canvas text style conventions where possible.
+- Tests:
+  - Create grouped symbol.
+  - Create component with tag prefix K so the app generates K1.
+  - Confirm K1 appears beside the group.
+  - Move the group.
+  - Confirm K1 moves with it.
+  - Save and reload.
+  - Confirm label is still present.
+- User validation:
+  - Check if default label position is acceptable.
+  - Tell whether label should default above, right, lower-right or another location.
+
+Phase 4 - Edit component metadata in properties panel
+- When a component/group with an instance is selected, Properties should show component fields. Implemented:
+  - Tag prefix
+  - Tag number
+  - Type
+  - Part of
+  - Label visible
+  - Label font size
+  - Label position X/Y
+- Label rotation/alignment if implemented later.
+- Changing tag prefix or number should update the visible label immediately. Implemented.
+- `Part of` should initially be a text or selector.
+- Recommended initial UI:
+  - Tag prefix: text input. Implemented.
+  - Tag number: number input. Implemented.
+  - Type: text input. Implemented.
+  - Part of: text input with future selector upgrade. Implemented as text input.
+- Better future UI:
+  - Part of as searchable dropdown of existing component tags/ids.
+- Tests:
+  - Create K1.
+  - Change tag number to 2.
+  - Confirm visible label updates immediately.
+  - Change font size.
+  - Confirm label size updates.
+  - Save and reload.
+  - Confirm values persist.
+- User validation:
+  - Confirm the property panel layout is comfortable.
+  - Confirm whether `Part of` should display tags, internal IDs, or both.
+
+Phase 5 - Label interaction
+- Allow selecting or dragging the component label without making it a loose text object.
+- Options:
+  - Option A: label moves when dragging with a modifier or through Properties only.
+  - Option B: label is directly draggable on canvas.
+- Recommended path:
+  - Start with Properties-controlled position in Phase 4.
+  - Add direct dragging after the model is stable.
+- If direct dragging is added:
+  - CanvasView needs hit testing for component labels.
+  - Dragging updates the label offset.
+  - Undo/redo should capture label position changes.
+- Tests:
+  - Drag or edit label offset.
+  - Move the component body afterward.
+  - Confirm label keeps the new relative position.
+  - Undo and redo both body movement and label movement.
+- User validation:
+  - Confirm whether direct dragging is worth the extra interaction complexity.
+
+Phase 6 - Component list / project index
+- Add a new panel or tab for project component instances. Implemented as the Components tab in the right panel.
+- It should list:
+- Derived tag. Implemented.
+- Type. Implemented.
+- Page. Implemented.
+- Part of. Implemented when present.
+- Clicking an item navigates to the component on the canvas. Implemented.
+- This prepares the project for cross-reference management.
+- Tests:
+  - Create K1 contactor and one contact related to K1.
+  - Confirm both appear in the list.
+  - Click each list row.
+  - Confirm the app navigates/focuses the right page and area.
+- User validation:
+  - Confirm whether this belongs in the right panel as a new tab or inside Components.
+
+Phase 7 - Relationship model for "Part of"
+- Replace simple free-text partOf with a stronger reference. Implemented for current UI.
+- Store:
+  - partOfId for reliable internal linking. Implemented.
+  - Optional partOfTag snapshot/display for readability. Implemented.
+- UI should let the user select an existing component instance as parent. Implemented in creation modal and Properties.
+- If the parent tag changes, children should display the updated relationship.
+- Example:
+  - Main component: id abc123, tagPrefix K, tagNumber 1, type Contactor
+  - Contact: id def456, tagPrefix K, tagNumber 1, type Contact NA, partOfId abc123
+- Tests:
+  - Create K1 contactor.
+  - Create contact NA and set Part of = K1 contactor.
+  - Rename parent K1 to K2.
+  - Confirm child relation still points to the same parent.
+  - Decide whether child visible tag should also update automatically or remain independent.
+- User decision needed:
+  - Should a child component automatically use the parent tag by default?
+  - Or should child tag be independent but suggested from parent?
+
+Phase 8 - Cross-reference foundation
+- Compute component location metadata:
+  - page index
+  - page name
+  - marker address if marker layout is available
+  - component bounds
+- Use existing marker utilities:
+  - src/utils/markers.ts
+  - formatMarkerAddress
+  - pointToMarker
+  - markerToBounds
+- Add derived cross-reference info to UI, not necessarily saved at first.
+- Example display:
+  - K1 coil: Page 1, B4
+  - K1 contact NA: Page 2, D7
+- Tests:
+  - Create related components on different pages.
+  - Confirm the list can show their locations.
+  - Rename pages or switch PDF page size/orientation.
+  - Confirm addresses update from current settings.
+- User validation:
+  - Confirm desired reference format, for example "P1-B4", "1B4", "Page 1 / B4".
+
+Phase 9 - Cross-reference rendering on canvas/PDF
+- Add optional cross-reference label rendering near component tags.
+- For a contact, show where the parent coil/main component is.
+- For a main component, show where child contacts are.
+- This should be configurable because drawings can get crowded.
+- PDF export must include these linked labels if visible.
+- Tests:
+  - Create K1 on page 1.
+  - Create K1 contact on page 2 with Part of K1.
+  - Enable cross-references.
+  - Export PDF.
+  - Confirm references appear both on canvas and PDF.
+- User validation:
+  - Inspect generated PDF and report whether placement and formatting match electrical drawing expectations.
+
+Phase 10 - Library/template integration
+- Decide how built-in App Library components should create intelligent instances.
+- Example:
+  - Placing a "Contactor coil" template could prompt for tag prefix/type.
+  - Placing a "Contact NA" template could prompt for tag prefix and Part of.
+- Store suggested defaults in component definitions:
+  - defaultType
+  - defaultTagPrefix
+  - defaultLabel
+- Keep old JSON components compatible.
+- Tests:
+  - Place existing built-in components.
+  - Confirm old library files still load.
+  - Add metadata to one sample built-in component.
+  - Confirm it prompts or initializes component instance metadata.
+- User validation:
+  - Confirm which built-in symbols should be treated as intelligent first.
+
+Testing policy for this work
+- After each implementation phase, run:
+  npm run build
+- When UI behavior changes, run the local app:
+  npm run dev -- --host 0.0.0.0
+- Manual user tests are important because CAD interaction details are visual and workflow-heavy.
+- The user should report:
+  - What action was tested.
+  - What happened.
+  - What was expected if different.
+  - Any console error, if visible.
+- Good manual test project for this feature:
+  1. Draw a small contactor coil symbol.
+  2. Group it.
+  3. Create component with prefix K, generated tag K1, type Contactor.
+  4. Draw a normally-open contact.
+  5. Group it.
+  6. Create related contact using the desired K tag relation, type Contact NA, Part of K1.
+  7. Move both components.
+  8. Rename the main component from K1 to K2.
+  9. Save project JSON.
+  10. Reload project JSON.
+  11. Export PDF.
+  12. Confirm tags, relationships and labels remain correct.
+
+Risks and implementation notes
+- Existing project import is intentionally strict. `componentInstances` is now required for the new format.
+- Undo/redo must include component instance metadata or the UI will feel inconsistent.
+- The linked label must not become a normal TextShape, or future tag updates and cross-references become fragile.
+- Component labels are rendered in CanvasView and in PDF export, so canvas/PDF are aligned for this feature.
+- If a component is deleted, componentInstances must be cleaned up.
+- If a group/component is ungrouped, decide whether the component instance is deleted or converted to linked shapeIds.
+- If user duplicates/copies a component, decide whether the duplicate gets:
+  - a new componentId with same derived tag, or
+  - a new componentId and suggested next tag number.
+- For electrical CAD, duplicate derived tags may be valid for related parts, but accidental duplicates are also possible.
+- A future duplicate-tag warning may be useful, but should not block advanced electrical workflows.
+- Duplicate-tag checks should compare the derived tag value, not only the prefix.
+
+Phase 1 implementation status
+- Implemented:
+  - Added `ComponentLabel` and `ComponentInstance` in src/models.ts.
+  - Added required `componentInstances` to `CadFile`.
+  - Added `componentInstances` React state in src/App.tsx.
+  - Included `componentInstances` in app snapshots, undo/redo history and restore.
+  - Included `componentInstances` in saved project JSON.
+  - Project JSON version changed from 3 to 4.
+  - Old project files without `componentInstances` are intentionally no longer accepted.
+  - Added runtime validation for component instance and label structures.
+  - Deleting a page now removes component instances attached to that page.
+- Verification:
+  - `npm run build` passed after this implementation.
+  - The existing Vite chunk-size warning remains.
+- Not implemented yet:
+  - Editing component metadata in the properties panel.
+  - Direct label movement.
+  - Cross-references.
+
+Phase 2 implementation status
+- Implemented:
+  - Added "Create component" to the selection context menu when exactly one selected shape is a group.
+  - The option is hidden if that group is already linked to a component instance.
+  - Creation now uses an in-app modal/form instead of browser prompts.
+  - The modal asks for Tag prefix, Type and Part of.
+  - The modal shows a preview of the generated tag.
+  - The app generates the next `tagNumber` for the entered prefix.
+  - A new `ComponentInstance` is created with:
+    - unique `componentId`
+    - `tagPrefix`
+    - `tagNumber`
+    - `type`
+    - optional `partOfTag`
+    - current `pageId`
+    - `shapeIds` containing the selected group id
+    - default linked-label data for future rendering
+  - Deleting, cutting or ungrouping the linked group removes the component instance.
+  - Added English and Portuguese UI strings for the context-menu action and prompts.
+- Verification:
+  - `npm run build` passed after this implementation.
+  - The existing Vite chunk-size warning remains.
+- Not implemented yet:
+  - Properties-panel editing for component metadata.
+  - Parent selector for `Part of`; it is currently plain text.
+
+Phase 3 implementation status
+- Implemented:
+  - `CanvasView` receives `componentInstances` from App.
+  - Labels are rendered in a separate SVG group with `pointerEvents="none"`.
+  - The label text is derived from `tagPrefix + tagNumber`.
+  - The linked group is found by `shapeIds`.
+  - The label position is derived from the linked shape bounds plus the stored label offsets.
+  - The label follows the group when it moves because it is recalculated from the current group bounds.
+  - The label is not a `TextShape` and is not selectable as ordinary text.
+  - Added `.component-label` styling in src/styles.css.
+- Verification:
+  - `npm run build` passed after this implementation.
+  - The existing Vite chunk-size warning remains.
+- Not implemented yet:
+  - Direct label dragging.
+  - Properties-panel controls for label rotation/alignment.
+
+Phase 4 implementation status
+- Implemented:
+  - App derives `selectedComponentInstance` from the selected linked group.
+  - RightPanel passes the selected component instance to PropertiesPanel.
+  - PropertiesPanel can edit:
+    - tag prefix
+    - tag number
+    - type
+    - Part of text
+    - label visibility
+    - label offset X/Y
+    - label font size
+    - label alignment
+    - label rotation
+  - Editing prefix or number updates the visible label immediately.
+  - Editing label offset or size updates the canvas immediately.
+  - Editing label alignment or rotation updates the canvas immediately.
+  - Added English and Portuguese UI strings for component properties.
+  - Added `.property-section` styling.
+- Verification:
+  - `npm run build` passed after this implementation.
+  - The existing Vite chunk-size warning remains.
+- PDF export update after Phase 4:
+  - Implemented drawing visible component labels in exported PDFs.
+  - PDF labels use the same derived tag, linked shape bounds and label offsets as the canvas.
+  - Hidden labels are not exported.
+  - User validation: PDF follows the canvas drawing as expected.
+  - A later user test found rotated labels did not match canvas orientation/alignment in PDF.
+  - Fix applied: PDF label export now uses manual text anchoring and inverts the jsPDF angle to match SVG/canvas rotation.
+  - `npm run build` passed after the PDF rotation/alignment fix.
+  - User validation: rotated/centered PDF label now matches the canvas.
+- Component creation modal update:
+  - Replaced the earlier browser-prompt flow with an in-app modal.
+  - The modal can be canceled with Escape, outside click, the close button or Cancel.
+  - The Create button is disabled until a tag prefix is entered.
+  - `npm run build` passed after this update.
+  - User validation: the new modal worked well.
+- Phase 6 implementation status:
+  - Added `src/components/ComponentInstancesPanel.tsx`.
+  - Added a `Components` tab to the right panel.
+  - The tab lists project component instances by derived tag, type, page and optional Part of.
+  - Clicking an item navigates to the linked component bounds on the canvas.
+  - `npm run build` passed after this update.
+  - User validation: the Components tab and navigation worked perfectly.
+- Phase 7 partial implementation status:
+  - Replaced the free-text Part of field with a select of existing component instances.
+  - Creation modal stores `partOfId` and derived `partOfTag` when a parent is selected.
+  - Properties panel also edits `partOfId` and `partOfTag` through a select.
+  - The Components tab continues to display Part of using the stored display tag.
+  - `npm run build` passed after this update.
+  - User validation: Part of selector and relationship display worked correctly.
+- Label controls update after Phase 7:
+  - Added Properties controls for label alignment and label rotation.
+  - Canvas and PDF already respect these stored label values.
+  - `npm run build` passed after this update.
+- Not implemented yet:
+  - A parent selector for `Part of`.
+  - Direct label dragging.
+
+Immediate next recommended user test
+- Open the local app.
+- Draw at least two shapes.
+- Select them and group them.
+- Right-click the group.
+- Confirm "Criar componente" appears.
+- Create a component:
+  - Tag prefix: K
+  - Type: Contator
+  - Part of: leave empty
+- Right-click the same group again.
+- Confirm "Criar componente" no longer appears for that same group.
+- Use Download Project.
+- Inspect the JSON file and confirm it contains:
+  - `"version": 4`
+  - `"componentInstances"` with one item containing `"tagPrefix": "K"` and `"tagNumber": 1`
+- Confirm the label `K1` appears beside the group on the canvas.
+- Move the group and confirm the label follows it.
+- Select the linked group and open Properties.
+- Confirm a "Componente" section appears.
+- Change tag number from 1 to 2 and confirm the label changes from K1 to K2.
+- Change label X/Y and confirm the label moves relative to the group.
+- Change label size and confirm the label size changes.
+- Change label alignment and rotation and confirm the label updates on canvas/PDF.
+- For rotation 90 with center alignment, confirm the PDF orientation and anchor match the canvas.
+- Toggle "Mostrar etiqueta" and confirm the label hides/shows.
+- Export PDF and confirm the visible component label appears in the PDF.
+- Hide the label and export again; confirm the hidden label does not appear.
+- Upload the same JSON back into the app.
+- Confirm the drawing loads normally and the label still appears.
+- Open the right panel `Componentes` tab.
+- Confirm the created component appears with tag, type and page.
+- Click the component row and confirm the canvas navigates/focuses it.
+- Create a second component and choose the first component in the `Parte de` selector.
+- Confirm the Components tab shows the relationship as `Parte de K1` or equivalent.
+- Select the second component and change `Parte de` from Properties; confirm the list updates.
+- Optional cleanup test:
+  - Select the K1 group and ungroup it.
+  - Download the project again.
+  - Confirm `componentInstances` is empty because the linked group no longer exists.
+
+Immediate next recommended development step after user validation
+- Decide next step:
+  - Either implement label alignment/rotation/direct dragging.
+- Or implement a parent selector for `Part of`.
+- Or improve component creation with autocomplete/search for parent selection.
+
+How to resume in a future session
+- User can say:
+  "Leia o codex_summary.txt e continue de onde paramos."
+- Assistant should then:
+  1. Read this file.
+  2. Check git status.
+  3. Confirm whether the current uncommitted changes should be committed.
+  4. Review the latest implementation statuses for Phases 1-4 and PDF label export.
+  5. Continue with user validation or the next selected development step unless the user requests another phase.
