@@ -11,6 +11,11 @@ export const resources = {
         portugueseBrazil: "Portuguese (Brazil)"
       },
       toolbar: {
+        groups: {
+          tools: "Tools",
+          view: "View",
+          file: "File"
+        },
         tools: {
           select: "Select",
           line: "Line",
@@ -32,15 +37,15 @@ export const resources = {
       rightPanel: {
         tabsAriaLabel: "Inspector tabs",
         tabs: {
-          properties: "Properties",
+          properties: "Object",
           components: "Components",
           potentials: "Potentials",
           layers: "Layers",
-          settings: "Settings"
+          settings: "Project"
         }
       },
       componentInstances: {
-        title: "Project Components",
+        title: "Drawing Components",
         empty: "No component instances yet.",
         unknownType: "Untyped",
         partOf: "Part of {{tag}}"
@@ -71,26 +76,33 @@ export const resources = {
         }
       },
       components: {
-        title: "Components",
-        appLibrary: "App Library",
-        projectComponents: "Project Components",
-        saveToProject: "Save to Project",
-        defaultName: "Component {{number}}",
-        emptyAppLibrary: "No built-in components yet.",
-        emptyProjectComponents: "No project components yet.",
-        placementHint: "Click or drag a component onto the canvas to place it. Hold Alt for contain select.",
+        title: "Library",
+        appLibrary: "App Templates",
+        projectComponents: "Project Templates",
+        saveToProject: "Save selection as template",
+        defaultName: "Template {{number}}",
+        emptyAppLibrary: "No app templates yet.",
+        emptyProjectComponents: "No project templates yet.",
+        placementHint: "Click or drag a template onto the canvas to insert it. Hold Alt for contain select.",
+        insert: "Insert",
+        readyToInsert: "Ready to insert",
+        templateMetadata: "Template metadata",
+        prefixBadge: "Prefix {{prefix}}",
+        typeBadge: "{{type}}",
+        rename: "Rename",
+        renamePrompt: "Template name",
         delete: "Delete",
-        exportToAppLibrary: "Download JSON",
-        exportSuccess: "Component JSON downloaded: {{fileName}}",
-        exportFailed: "Could not download the component JSON.",
-        exportFilePrompt: "Component JSON file name",
+        exportToAppLibrary: "Download template JSON",
+        exportSuccess: "Template JSON downloaded: {{fileName}}",
+        exportFailed: "Could not download the template JSON.",
+        exportFilePrompt: "Template JSON file name",
         exportCategoryPrompt: "Category",
         exportHelp: "Downloaded files can be added to src/library/components and bundled in the next build.",
-        searchPlaceholder: "Search components",
+        searchPlaceholder: "Search templates",
         sourceApp: "App",
         sourceProject: "Project",
         uncategorized: "Uncategorized",
-        noMatches: "No components match the current filter."
+        noMatches: "No templates match the current filter."
       },
       layers: {
         title: "Layers",
@@ -110,7 +122,7 @@ export const resources = {
         prefix: "P{{number}}"
       },
       properties: {
-        title: "Properties",
+        title: "Object",
         empty: "Select an object to edit properties.",
         activeLayer: "Active layer: {{name}}",
         delete: "Delete",
@@ -153,6 +165,8 @@ export const resources = {
         link: "Link",
         target: "Target",
         componentSection: "Component",
+        labelSection: "Label",
+        geometrySection: "Geometry",
         tagPrefix: "Tag prefix",
         tagNumber: "Tag number",
         componentType: "Type",
@@ -208,6 +222,11 @@ export const resources = {
         portugueseBrazil: "Portugu\u00EAs (Brasil)"
       },
       toolbar: {
+        groups: {
+          tools: "Ferramentas",
+          view: "Visualiza\u00E7\u00E3o",
+          file: "Arquivo"
+        },
         tools: {
           select: "Selecionar",
           line: "Linha",
@@ -229,15 +248,15 @@ export const resources = {
       rightPanel: {
         tabsAriaLabel: "Abas do inspetor",
         tabs: {
-          properties: "Propriedades",
+          properties: "Objeto",
           components: "Componentes",
           potentials: "Potenciais",
           layers: "Camadas",
-          settings: "Configura\u00E7\u00F5es"
+          settings: "Projeto"
         }
       },
       componentInstances: {
-        title: "Componentes do projeto",
+        title: "Componentes no desenho",
         empty: "Nenhuma inst\u00E2ncia de componente.",
         unknownType: "Sem tipo",
         partOf: "Parte de {{tag}}"
@@ -268,26 +287,33 @@ export const resources = {
         }
       },
       components: {
-        title: "Componentes",
-        appLibrary: "Biblioteca do App",
-        projectComponents: "Componentes do Projeto",
-        saveToProject: "Salvar no Projeto",
-        defaultName: "Componente {{number}}",
-        emptyAppLibrary: "Nenhum componente nativo ainda.",
-        emptyProjectComponents: "Nenhum componente do projeto ainda.",
-        placementHint: "Clique ou arraste um componente para o canvas para posicion\u00E1-lo. Segure Alt para sele\u00E7\u00E3o por conten\u00E7\u00E3o.",
+        title: "Biblioteca",
+        appLibrary: "Modelos do app",
+        projectComponents: "Modelos do projeto",
+        saveToProject: "Salvar sele\u00E7\u00E3o como modelo",
+        defaultName: "Modelo {{number}}",
+        emptyAppLibrary: "Nenhum modelo do app ainda.",
+        emptyProjectComponents: "Nenhum modelo do projeto ainda.",
+        placementHint: "Clique ou arraste um modelo para o canvas para inseri-lo. Segure Alt para sele\u00E7\u00E3o por conten\u00E7\u00E3o.",
+        insert: "Inserir",
+        readyToInsert: "Pronto para inserir",
+        templateMetadata: "Metadados do modelo",
+        prefixBadge: "Prefixo {{prefix}}",
+        typeBadge: "{{type}}",
+        rename: "Renomear",
+        renamePrompt: "Nome do modelo",
         delete: "Excluir",
-        exportToAppLibrary: "Baixar JSON",
-        exportSuccess: "JSON do componente baixado: {{fileName}}",
-        exportFailed: "N\u00E3o foi poss\u00EDvel baixar o JSON do componente.",
-        exportFilePrompt: "Nome do arquivo JSON do componente",
+        exportToAppLibrary: "Baixar modelo JSON",
+        exportSuccess: "JSON do modelo baixado: {{fileName}}",
+        exportFailed: "N\u00E3o foi poss\u00EDvel baixar o JSON do modelo.",
+        exportFilePrompt: "Nome do arquivo JSON do modelo",
         exportCategoryPrompt: "Categoria",
         exportHelp: "Os arquivos baixados podem ser adicionados a src/library/components e inclu\u00EDdos no pr\u00F3ximo build.",
-        searchPlaceholder: "Buscar componentes",
+        searchPlaceholder: "Buscar modelos",
         sourceApp: "App",
         sourceProject: "Projeto",
         uncategorized: "Sem categoria",
-        noMatches: "Nenhum componente corresponde ao filtro atual."
+        noMatches: "Nenhum modelo corresponde ao filtro atual."
       },
       layers: {
         title: "Camadas",
@@ -307,7 +333,7 @@ export const resources = {
         prefix: "P{{number}}"
       },
       properties: {
-        title: "Propriedades",
+        title: "Objeto",
         empty: "Selecione um objeto para editar as propriedades.",
         activeLayer: "Camada ativa: {{name}}",
         delete: "Excluir",
@@ -350,6 +376,8 @@ export const resources = {
         link: "Link",
         target: "Destino",
         componentSection: "Componente",
+        labelSection: "Etiqueta",
+        geometrySection: "Geometria",
         tagPrefix: "Prefixo da tag",
         tagNumber: "N\u00FAmero da tag",
         componentType: "Tipo",

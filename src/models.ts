@@ -93,6 +93,9 @@ export type Component = {
   shapes: Shape[];
   gridOffsetX: number;
   gridOffsetY: number;
+  defaultTagPrefix?: string;
+  defaultComponentType?: string;
+  defaultLabel?: ComponentLabel;
 };
 
 export type ComponentSource = "app" | "project";

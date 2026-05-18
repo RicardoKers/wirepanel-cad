@@ -1,5 +1,5 @@
 WirePanel CAD - project handoff and next work plan
-Updated: 2026-05-17
+Updated: 2026-05-18
 
 Project
 - Local path: d:\06_Temporary\wirepanel-cad\wirepanel-cad
@@ -13,9 +13,8 @@ Current repo state
 - Rename changes were committed and pushed in commit 5801b0a: "Rename project to wirepanel-cad".
 - Git sometimes reports "dubious ownership" for this local directory. Use this pattern when needed:
   git -c safe.directory=D:/06_Temporary/wirepanel-cad/wirepanel-cad status --short
-- The local development server was started successfully at:
-  http://localhost:5174/wirepanel-cad/
-- Port 5173 was already in use, so Vite selected 5174.
+- The local development server was most recently started successfully at:
+  http://localhost:5173/wirepanel-cad/
 - `npm run build` passes.
 - Vite still shows the known warning that one production chunk is larger than 500 kB.
 - Phase 1 of intelligent components has been started and implemented at the data/state level.
@@ -23,16 +22,62 @@ Current repo state
 - Phase 2 has been started with a simple right-click workflow for creating component instances from grouped shapes.
 - Linked tag rendering on the canvas is implemented.
 - Properties-panel editing for basic component metadata and label settings is implemented.
+- UI terminology is being standardized:
+  - Component placed in the drawing = Component.
+  - Reusable component library item = Template/Modelo.
+  - Left panel = Library/Biblioteca for inserting templates.
+  - Right panel = Inspector for object/project management.
+- The latest local work includes intelligent template reuse, copy/paste improvements and UI ergonomics for the Library, Inspector/Object panel and top toolbar.
 
-Uncommitted UI change currently present
-- A discreet author signature was added near the lower-right corner of the application:
-  Kerschbaumer - IFC Luzerna
-- Files changed by that work:
-  - src/App.tsx
-  - src/styles.css
-- The signature is implemented as a fixed overlay with `pointer-events: none`.
-- It is positioned above the bottom page tabs so it does not block normal navigation.
-- This change has not yet been committed at the time this summary was updated.
+Latest local changes ready to commit
+- codex_summary.txt:
+  - Updated with the current component/template/library direction and the ergonomics plan.
+- src/components/ComponentsPanel.tsx:
+  - The left panel is now treated as the Library panel.
+  - The save-template action was moved to a full-width primary button at the top of the panel.
+  - Dragging a template now uses a clean SVG drag image instead of dragging the entire card UI.
+  - Library cards now prioritize insertion, show intelligent template metadata and demote JSON/delete actions to secondary links.
+  - Library cards were compacted for larger libraries: visible card content is now thumbnail + name + optional prefix pill.
+  - Template actions moved to a model context menu opened with right-click.
+- src/components/RightPanel.tsx:
+  - The old horizontal tab button row was replaced with a compact icon + text inspector navigation.
+- src/models.ts:
+  - `Component` now supports optional intelligent defaults:
+    - `defaultTagPrefix`
+    - `defaultComponentType`
+    - `defaultLabel`
+- src/utils/components.ts:
+  - Component definition/export helpers preserve optional intelligent defaults.
+- src/App.tsx:
+  - Copy/paste now preserves intelligent component instances.
+  - Pasted component instances receive new `componentId` values and new sequential tag numbers.
+  - Pasted component instances clear `Part of`.
+  - Saving a template from a selected intelligent component stores its prefix, type and label defaults.
+  - Inserting a template with a stored prefix creates a new intelligent component instance automatically.
+- src/i18n/resources.ts:
+  - UI labels were renamed in English and Portuguese to match the new terminology.
+- src/styles.css:
+  - Added small layout/style adjustments for the Library panel and its primary action.
+  - Added styles for the new right-panel inspector navigation.
+  - On narrow screens, the right-panel navigation becomes horizontally scrollable to preserve vertical content space.
+  - Added refined Library card styles for insertion, metadata badges and secondary actions.
+  - Library cards now use a compact responsive grid for easier navigation with many templates.
+  - Toolbar styles were reorganized for grouped icon+text controls and horizontal overflow on narrower widths.
+  - Toolbar was further compacted into icon-only square buttons with visual group separators.
+  - Right inspector navigation was compacted vertically with smaller rows and icons.
+  - Object/properties rows and sections were tightened to reduce vertical scrolling.
+- src/components/PropertiesPanel.tsx:
+  - Object panel content is now grouped into clearer sections:
+    - Component/Componente
+    - Label/Etiqueta
+    - Geometry/Geometria
+- src/components/Toolbar.tsx:
+  - Top toolbar now has explicit Tools, View and File groups.
+  - Toolbar controls use compact inline SVG icons with tooltips/aria labels.
+  - Visible group labels and visible button text were removed to reduce vertical and horizontal footprint.
+  - File/upload/help/export actions remain functionally unchanged.
+- The author signature `Kerschbaumer - IFC Luzerna` remains part of the app UI.
+- These changes are ready to commit at the time this summary was updated.
 
 Current application overview
 - Browser-based 2D CAD for industrial electrical drawings.
@@ -55,11 +100,12 @@ Important files
   - Selection, dragging, resizing, drawing tools, snapping, fit-to-page behavior.
   - Shape rendering for SVG canvas.
 - src/components/ComponentsPanel.tsx
-  - App Library and Project Components panel.
-  - Search, category collapse, project component export/delete/rename actions.
+  - Left Library panel.
+  - App templates and project templates.
+  - Search, category collapse, template export/delete/rename actions.
 - src/components/RightPanel.tsx
   - Main right-side tab host.
-  - Properties, potentials, layers and settings tabs.
+  - Object, components, potentials, layers and project tabs.
 - src/components/PropertiesPanel.tsx
   - Shape property editing.
   - Selection actions such as delete, move, rotate, mirror and align.
@@ -105,6 +151,7 @@ Existing data model summary
   - shapes
   - gridOffsetX
   - gridOffsetY
+  - optional defaultTagPrefix/defaultComponentType/defaultLabel for intelligent templates
 - `LibraryComponent` extends `Component` with:
   - source: "app" | "project"
   - readOnly
@@ -124,10 +171,74 @@ Existing data model summary
 
 Existing component workflow
 - User can draw shapes, select them and save them as a project component.
-- Project components are stored inside the project JSON file.
-- Built-in app components are loaded from JSON files in src/library/components.
-- Component placement currently inserts graphical shapes into the active page.
+- Project templates are stored inside the project JSON file.
+- Built-in app templates are loaded from JSON files in src/library/components.
+- Template placement currently inserts graphical shapes into the active page.
 - Existing components are mostly "graphical blocks", not yet intelligent electrical/project entities.
+
+Terminology and ergonomics direction
+- UI should use these terms consistently:
+  - Component: an intelligent instance placed in the drawing, with tag/type/relationships.
+  - Template/Modelo: a reusable library item.
+  - Library/Biblioteca: left panel where templates are searched and inserted.
+  - Object/Objeto: right-panel tab for editing the current selection.
+  - Project/Projeto: right-panel tab for app/project settings.
+  - Label/Etiqueta: text linked to a component instance.
+  - Part of/Parte de: relationship between component instances.
+- The left panel should focus on insertion:
+  - App Templates / Modelos do app.
+  - Project Templates / Modelos do projeto.
+  - Save selection as template / Salvar seleção como modelo.
+  - Download template JSON / Baixar modelo JSON.
+- The right panel should focus on inspection/management:
+  - Object / Objeto.
+  - Components / Componentes.
+  - Potentials / Potenciais.
+  - Layers / Camadas.
+  - Project / Projeto.
+- First ergonomics pass implemented:
+  - Renamed the left panel to Library/Biblioteca.
+  - Renamed App Library to App Templates / Modelos do app.
+  - Renamed Project Components to Project Templates / Modelos do projeto.
+  - Renamed Save to Project to Save selection as template / Salvar seleção como modelo.
+  - Renamed right-panel Properties tab to Object / Objeto.
+  - Renamed right-panel Settings tab to Project / Projeto.
+  - Moved the save-template action to a full-width primary action at the top of the Library panel.
+  - Changed template drag feedback so the cursor preview shows the SVG drawing, not the full library card.
+  - Replaced the right-panel horizontal tab row with a clearer vertical inspector navigation using simple icons and labels.
+  - Refined Library cards so the main action is "Insert/Inserir"; prefix/type metadata appears when the template is intelligent, while download/delete are visually secondary.
+  - Further compacted the Library for many templates: card actions moved to right-click context menu and the grid shows only thumbnail/name plus optional prefix.
+  - Redesigned the top toolbar into clearer groups with compact icons and labels:
+    - Tools/Ferramentas
+    - View/Visualizacao
+    - File/Arquivo
+  - Then compacted the toolbar to icon-only controls; names remain available through native tooltip titles and aria-labels.
+  - Compact right-panel inspector navigation to reduce wasted height.
+  - Reorganize Object/Objeto properties into Component, Label and Geometry blocks.
+
+Copy/paste and intelligent template status
+- Implemented:
+  - Ctrl+C / Ctrl+V copies selected intelligent components together with their linked geometry.
+  - The pasted copy keeps graphical shape data, tag prefix, component type, label settings and optional definition id.
+  - The pasted copy receives a new shape id or ids, a new component instance id and the next sequential tag number for the same prefix.
+  - The pasted copy intentionally clears `partOfId` and `partOfTag`.
+  - Saving a project template from a selected intelligent component stores `defaultTagPrefix`, `defaultComponentType` and `defaultLabel`.
+  - Downloaded template JSON also preserves those defaults.
+  - Inserting a project/app template with `defaultTagPrefix` creates an intelligent component instance immediately.
+  - Inserting a template without `defaultTagPrefix` remains a graphical insertion only.
+- Verification:
+  - `npm run build` passed after this implementation.
+  - The existing Vite chunk-size warning remains.
+- Recommended user tests:
+  - Create component K1 from a grouped drawing.
+  - Select K1 and press Ctrl+C, then Ctrl+V.
+  - Confirm the pasted component appears as K2.
+  - Confirm K2 has no `Parte de` value.
+  - Change K1 label position/rotation, copy/paste again, and confirm the pasted label keeps the same settings.
+  - Save K1 as a template in the Library.
+  - Insert that saved template from the Library.
+  - Confirm the inserted template creates the next K number automatically.
+  - Download the template JSON and confirm it contains `defaultTagPrefix`.
 
 Design direction for intelligent components
 - Goal: evolve from graphical blocks to intelligent project components.

@@ -58,6 +58,13 @@ const initialPdfSettings: PdfSettings = {
 
 type AlignMode = "left" | "right" | "top" | "bottom" | "centerX" | "centerY";
 
+type ClipboardData = {
+  shapes: Shape[];
+  componentInstances: ComponentInstance[];
+  offsetX: number;
+  offsetY: number;
+};
+
 type Bounds = {
   minX: number;
   minY: number;
@@ -151,7 +158,7 @@ export default function App() {
   } | null>(null);
   const [navigateTarget, setNavigateTarget] = useState<{ pageId: string; bounds: Bounds } | null>(null);
   const resizeRef = useRef<{ bounds: Bounds; shapes: Shape[] } | null>(null);
-  const clipboardRef = useRef<{ shapes: Shape[]; offsetX: number; offsetY: number } | null>(null);
+  const clipboardRef = useRef<ClipboardData | null>(null);
   const historyRef = useRef<{ past: AppSnapshot[]; future: AppSnapshot[] }>({ past: [], future: [] });
   const isRestoringRef = useRef(false);
   const lastSerializedRef = useRef<string>("");
@@ -755,20 +762,26 @@ export default function App() {
     return { ...shape };
   }
 
-  function cloneShapeWithNewIds(shape: Shape, nextPotentialNumberRef?: { value: number }): Shape {
+  function cloneShapeWithNewIds(
+    shape: Shape,
+    nextPotentialNumberRef?: { value: number },
+    idMap?: Map<string, string>
+  ): Shape {
+    const nextId = createId("shape");
+    idMap?.set(shape.id, nextId);
     if (shape.type === "group") {
       return {
         ...shape,
-        id: createId("shape"),
-        children: shape.children.map((child) => cloneShapeWithNewIds(child, nextPotentialNumberRef))
+        id: nextId,
+        children: shape.children.map((child) => cloneShapeWithNewIds(child, nextPotentialNumberRef, idMap))
       };
     }
     if (shape.type === "potential" && nextPotentialNumberRef) {
       const nextNumber = nextPotentialNumberRef.value;
       nextPotentialNumberRef.value += 1;
-      return { ...shape, id: createId("shape"), potentialNumber: nextNumber };
+      return { ...shape, id: nextId, potentialNumber: nextNumber };
     }
-    return { ...shape, id: createId("shape") };
+    return { ...shape, id: nextId };
   }
 
   const roundCoord = (value: number) => Math.round(value * 1000) / 1000;
@@ -1780,10 +1793,16 @@ export default function App() {
     if (selection.length === 0) return;
     const selectedShapes = shapes.filter((shape) => selection.includes(shape.id));
     if (selectedShapes.length === 0) return;
+    const sourceInstance = componentInstances.find(
+      (instance) => instance.pageId === activePageId && instance.shapeIds.some((shapeId) => selection.includes(shapeId))
+    );
     const component = createComponentDefinition(selectedShapes, {
       id: createId("component"),
       name: t("components.defaultName", { number: components.length + 1 }),
-      gridSize
+      gridSize,
+      defaultTagPrefix: sourceInstance?.tagPrefix,
+      defaultComponentType: sourceInstance?.type,
+      defaultLabel: sourceInstance?.label
     });
     setComponents((prev) => [...prev, component]);
     setComponentExportStatus(null);
@@ -1806,13 +1825,31 @@ export default function App() {
     );
   }
 
-  function getNextComponentTagNumber(prefix: string) {
+  function getNextComponentTagNumberFrom(prefix: string, sourceInstances: ComponentInstance[]) {
     const normalizedPrefix = prefix.toUpperCase();
-    const usedNumbers = componentInstances
+    const usedNumbers = sourceInstances
       .filter((instance) => instance.tagPrefix.toUpperCase() === normalizedPrefix)
       .map((instance) => instance.tagNumber)
       .filter((number) => Number.isInteger(number) && number > 0);
     return usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1;
+  }
+
+  function getNextComponentTagNumber(prefix: string) {
+    return getNextComponentTagNumberFrom(prefix, componentInstances);
+  }
+
+  function getDefaultComponentLabel(label?: ComponentLabel): ComponentLabel {
+    return label
+      ? { ...label }
+      : {
+          visible: true,
+          textMode: "tag",
+          offsetX: 6,
+          offsetY: -4,
+          fontSize: 3.5,
+          align: "left",
+          rotation: 0
+        };
   }
 
   function openCreateComponentDialog() {
@@ -1853,15 +1890,7 @@ export default function App() {
         partOfTag: partOfTag || undefined,
         pageId: createComponentDialog.pageId,
         shapeIds: [createComponentDialog.shapeId],
-        label: {
-          visible: true,
-          textMode: "tag",
-          offsetX: 6,
-          offsetY: -4,
-          fontSize: 3.5,
-          align: "left",
-          rotation: 0
-        }
+        label: getDefaultComponentLabel()
       }
     ]);
     setCreateComponentDialog(null);
@@ -1984,6 +2013,15 @@ export default function App() {
     );
     clipboardRef.current = {
       shapes: selectedShapes.map((shape) => cloneShape(shape)),
+      componentInstances: componentInstances
+        .filter(
+          (instance) =>
+            instance.pageId === activePageId && instance.shapeIds.every((shapeId) => selection.includes(shapeId))
+        )
+        .map((instance) => ({
+          ...instance,
+          label: { ...instance.label }
+        })),
       offsetX: Number.isFinite(bounds.minX) ? bounds.minX : 0,
       offsetY: Number.isFinite(bounds.minY) ? bounds.minY : 0
     };
@@ -1999,7 +2037,7 @@ export default function App() {
 
   function handlePasteSelection(point?: { x: number; y: number }) {
     if (!clipboardRef.current || clipboardRef.current.shapes.length === 0) return;
-    const { shapes: clipboardShapes, offsetX, offsetY } = clipboardRef.current;
+    const { shapes: clipboardShapes, componentInstances: clipboardComponentInstances, offsetX, offsetY } = clipboardRef.current;
     const bounds = clipboardShapes.reduce(
       (acc, shape) => {
         const shapeBounds = getShapeBounds(shape);
@@ -2028,10 +2066,38 @@ export default function App() {
       dy = targetY - bounds.minY;
     }
     const nextPotentialNumberRef = { value: nextPotentialNumber };
+    const shapeIdMap = new Map<string, string>();
     const pasted = clipboardShapes.map((shape) =>
-      cloneShapeWithNewIds(translateShape(cloneShape(shape), dx, dy), nextPotentialNumberRef)
+      cloneShapeWithNewIds(translateShape(cloneShape(shape), dx, dy), nextPotentialNumberRef, shapeIdMap)
     );
     updateActivePageShapes((prev) => [...prev, ...pasted]);
+    if (clipboardComponentInstances.length > 0) {
+      setComponentInstances((prev) => {
+        const nextInstances = [...prev];
+        const pastedInstances = clipboardComponentInstances
+          .map((instance) => {
+            const nextShapeIds = instance.shapeIds
+              .map((shapeId) => shapeIdMap.get(shapeId))
+              .filter((shapeId): shapeId is string => Boolean(shapeId));
+            if (nextShapeIds.length === 0) return null;
+            const tagNumber = getNextComponentTagNumberFrom(instance.tagPrefix, nextInstances);
+            const nextInstance: ComponentInstance = {
+              ...instance,
+              componentId: createId("componentInstance"),
+              tagNumber,
+              partOfId: undefined,
+              partOfTag: undefined,
+              pageId: activePageId,
+              shapeIds: nextShapeIds,
+              label: { ...instance.label }
+            };
+            nextInstances.push(nextInstance);
+            return nextInstance;
+          })
+          .filter((instance): instance is ComponentInstance => Boolean(instance));
+        return pastedInstances.length > 0 ? nextInstances : prev;
+      });
+    }
     setSelection(pasted.map((shape) => shape.id));
   }
 
@@ -2050,6 +2116,22 @@ export default function App() {
       nextPotentialNumber
     });
     updateActivePageShapes((prev) => [...prev, ...newShapes]);
+    const tagPrefix = component.defaultTagPrefix?.trim().toUpperCase();
+    if (tagPrefix) {
+      setComponentInstances((prev) => [
+        ...prev,
+        {
+          componentId: createId("componentInstance"),
+          definitionId: component.id,
+          tagPrefix,
+          tagNumber: getNextComponentTagNumberFrom(tagPrefix, prev),
+          type: component.defaultComponentType?.trim() || component.name || t("app.componentDefaultType"),
+          pageId: activePageId,
+          shapeIds: newShapes.map((shape) => shape.id),
+          label: getDefaultComponentLabel(component.defaultLabel)
+        }
+      ]);
+    }
     setPlacingComponentId(null);
   }
 

@@ -1,4 +1,4 @@
-import type { AppLibraryComponentFile, Component, ComponentSource, LibraryComponent, Shape } from "../models";
+import type { AppLibraryComponentFile, Component, ComponentLabel, ComponentSource, LibraryComponent, Shape } from "../models";
 import { createId } from "./id";
 import { getShapeBounds, translateShape } from "./geometry";
 
@@ -83,6 +83,9 @@ export function createComponentDefinition(
     description?: string;
     tags?: string[];
     normalizeIds?: boolean;
+    defaultTagPrefix?: string;
+    defaultComponentType?: string;
+    defaultLabel?: ComponentLabel;
   }
 ): Component {
   const bounds = getComponentBounds(sourceShapes);
@@ -100,7 +103,10 @@ export function createComponentDefinition(
     tags: options.tags?.map((tag) => tag.trim()).filter(Boolean) ?? [],
     shapes,
     gridOffsetX: safeGrid ? ((originX % safeGrid) + safeGrid) % safeGrid : 0,
-    gridOffsetY: safeGrid ? ((originY % safeGrid) + safeGrid) % safeGrid : 0
+    gridOffsetY: safeGrid ? ((originY % safeGrid) + safeGrid) % safeGrid : 0,
+    defaultTagPrefix: options.defaultTagPrefix?.trim().toUpperCase() || undefined,
+    defaultComponentType: options.defaultComponentType?.trim() || undefined,
+    defaultLabel: options.defaultLabel ? { ...options.defaultLabel } : undefined
   };
 }
 
@@ -196,7 +202,10 @@ export function buildAppLibraryComponentFile(component: Component): AppLibraryCo
     description: component.description,
     tags: component.tags,
     gridSize: 0,
-    normalizeIds: true
+    normalizeIds: true,
+    defaultTagPrefix: component.defaultTagPrefix,
+    defaultComponentType: component.defaultComponentType,
+    defaultLabel: component.defaultLabel
   });
 
   return {
@@ -240,7 +249,11 @@ export function isComponentValue(value: unknown): value is Component {
     Array.isArray((value as Component).shapes) &&
     (value as Component).shapes.every((shape) => isShapeValue(shape)) &&
     typeof (value as Component).gridOffsetX === "number" &&
-    typeof (value as Component).gridOffsetY === "number";
+    typeof (value as Component).gridOffsetY === "number" &&
+    (typeof (value as Component).defaultTagPrefix === "undefined" ||
+      typeof (value as Component).defaultTagPrefix === "string") &&
+    (typeof (value as Component).defaultComponentType === "undefined" ||
+      typeof (value as Component).defaultComponentType === "string");
 }
 
 export function isAppLibraryComponentFile(value: unknown): value is AppLibraryComponentFile {

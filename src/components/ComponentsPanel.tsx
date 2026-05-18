@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import type { DragEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Component, LibraryComponent, LineStyle, Shape } from "../models";
 import { buildComponentPlacementKey } from "../utils/components";
@@ -54,6 +54,12 @@ type ComponentCardItem = {
   source: "app" | "project";
   component: Component | LibraryComponent;
   editableName: boolean;
+};
+
+type ComponentMenuState = {
+  item: ComponentCardItem;
+  x: number;
+  y: number;
 };
 
 function getLineStyleProps(lineStyle?: LineStyle) {
@@ -189,6 +195,7 @@ export default function ComponentsPanel({
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [componentMenu, setComponentMenu] = useState<ComponentMenuState | null>(null);
 
   const searchTerm = query.trim().toLowerCase();
 
@@ -435,63 +442,61 @@ export default function ComponentsPanel({
     );
   }
 
+  function setComponentDragImage(event: DragEvent<HTMLDivElement>) {
+    const thumbnail = event.currentTarget.querySelector<SVGSVGElement>(".component-thumb");
+    if (!thumbnail) return;
+
+    const rect = thumbnail.getBoundingClientRect();
+    const dragImage = thumbnail.cloneNode(true) as SVGSVGElement;
+    dragImage.removeAttribute("class");
+    dragImage.setAttribute("width", `${Math.max(48, Math.round(rect.width))}`);
+    dragImage.setAttribute("height", `${Math.max(48, Math.round(rect.height))}`);
+    dragImage.style.position = "fixed";
+    dragImage.style.left = "-1000px";
+    dragImage.style.top = "-1000px";
+    dragImage.style.overflow = "visible";
+    dragImage.style.background = "transparent";
+    dragImage.style.pointerEvents = "none";
+
+    document.body.appendChild(dragImage);
+    event.dataTransfer.setDragImage(dragImage, rect.width / 2, rect.height / 2);
+    window.setTimeout(() => dragImage.remove(), 0);
+  }
+
   function renderCard(item: ComponentCardItem) {
     const placementKey = buildComponentPlacementKey(item.source, item.component.id);
     const isActive = placingComponentId === placementKey;
+    const tagPrefix = item.component.defaultTagPrefix?.trim().toUpperCase();
 
     return (
       <div
         key={placementKey}
         className={isActive ? "component-card active" : "component-card"}
-        onClick={() => onSelectComponent(placementKey)}
+        onClick={() => {
+          setComponentMenu(null);
+          onSelectComponent(placementKey);
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setComponentMenu({
+            item,
+            x: event.clientX,
+            y: event.clientY
+          });
+        }}
         draggable
         onDragStart={(event) => {
+          setComponentMenu(null);
           event.dataTransfer.setData("text/plain", placementKey);
           event.dataTransfer.effectAllowed = "copy";
+          setComponentDragImage(event);
         }}
       >
         {renderThumbnail(item.component)}
         <div className="component-card-content">
-          <div className="component-card-head">
-            {item.editableName ? (
-              <input
-                className="component-name-input"
-                type="text"
-                value={item.component.name}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => event.stopPropagation()}
-                onChange={(event) => onRenameComponent(item.component.id, event.target.value)}
-              />
-            ) : (
-              <div className="component-name">{item.component.name}</div>
-            )}
-          </div>
-          {item.component.description && <p className="component-description">{item.component.description}</p>}
-          <div className="component-card-actions">
-            {item.source === "project" && onExportComponent && (
-              <button
-                type="button"
-                className="chip"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onExportComponent(item.component.id);
-                }}
-              >
-                {t("components.exportToAppLibrary")}
-              </button>
-            )}
-            {item.source === "project" && (
-              <button
-                type="button"
-                className="chip danger"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDeleteComponent(item.component.id);
-                }}
-              >
-                {t("components.delete")}
-              </button>
-            )}
+          <div className="component-card-title-row">
+            <div className="component-name" title={item.component.name}>{item.component.name}</div>
+            {tagPrefix && <span className="component-prefix-pill">{tagPrefix}</span>}
           </div>
         </div>
       </div>
@@ -501,12 +506,14 @@ export default function ComponentsPanel({
   const noMatches = searchTerm.length > 0 && filteredAppComponents.length === 0 && filteredProjectComponents.length === 0;
 
   return (
-    <section className="panel">
-      <header className="panel-header">
+    <section className="panel library-panel" onClick={() => setComponentMenu(null)}>
+      <header className="panel-header library-header">
         <h3>{t("components.title")}</h3>
-        <button className="icon-button" onClick={onSaveComponent}>{t("components.saveToProject")}</button>
       </header>
       <div className="panel-body component-list">
+        <button className="tool-button primary library-save-button" onClick={onSaveComponent}>
+          {t("components.saveToProject")}
+        </button>
         <input
           className="component-search-input"
           type="search"
@@ -575,6 +582,64 @@ export default function ComponentsPanel({
         </div>
         <p className="muted small">{t("components.placementHint")}</p>
       </div>
+      {componentMenu && (
+        <div
+          className="context-menu component-context-menu"
+          style={{ top: componentMenu.y, left: componentMenu.x }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="context-menu-item"
+            onClick={() => {
+              onSelectComponent(buildComponentPlacementKey(componentMenu.item.source, componentMenu.item.component.id));
+              setComponentMenu(null);
+            }}
+          >
+            {t("components.insert")}
+          </button>
+          {componentMenu.item.editableName && (
+            <button
+              type="button"
+              className="context-menu-item"
+              onClick={() => {
+                const nextName = window.prompt(t("components.renamePrompt"), componentMenu.item.component.name);
+                if (nextName !== null) onRenameComponent(componentMenu.item.component.id, nextName);
+                setComponentMenu(null);
+              }}
+            >
+              {t("components.rename")}
+            </button>
+          )}
+          {componentMenu.item.source === "project" && onExportComponent && (
+            <button
+              type="button"
+              className="context-menu-item"
+              onClick={() => {
+                onExportComponent(componentMenu.item.component.id);
+                setComponentMenu(null);
+              }}
+            >
+              {t("components.exportToAppLibrary")}
+            </button>
+          )}
+          {componentMenu.item.source === "project" && (
+            <>
+              <div className="context-menu-separator" />
+              <button
+                type="button"
+                className="context-menu-item danger"
+                onClick={() => {
+                  onDeleteComponent(componentMenu.item.component.id);
+                  setComponentMenu(null);
+                }}
+              >
+                {t("components.delete")}
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

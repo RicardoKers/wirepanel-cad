@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComponentInstance, Layer, PdfSettings, Shape } from "../models";
 import LayersPanel from "./LayersPanel";
@@ -69,7 +70,59 @@ type PotentialSharedChanges = {
 
 type TabId = "properties" | "components" | "potentials" | "layers" | "settings";
 
-const tabs: TabId[] = ["properties", "components", "potentials", "layers", "settings"];
+type TabItem = {
+  id: TabId;
+  icon: ReactNode;
+};
+
+const tabItems: TabItem[] = [
+  {
+    id: "properties",
+    icon: (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="3" y="3" width="10" height="10" rx="1.5" />
+        <circle cx="8" cy="8" r="2" />
+      </svg>
+    )
+  },
+  {
+    id: "components",
+    icon: (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="2.5" y="3" width="6" height="4" rx="1" />
+        <rect x="7.5" y="9" width="6" height="4" rx="1" />
+        <path d="M8.5 5h2v4" />
+      </svg>
+    )
+  },
+  {
+    id: "potentials",
+    icon: (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M9 1.8 4.2 8.3h3.4L6.9 14.2l4.9-6.8H8.4L9 1.8Z" />
+      </svg>
+    )
+  },
+  {
+    id: "layers",
+    icon: (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M8 2.4 13.2 5 8 7.6 2.8 5 8 2.4Z" />
+        <path d="m13.2 8-5.2 2.6L2.8 8" />
+        <path d="m13.2 11-5.2 2.6L2.8 11" />
+      </svg>
+    )
+  },
+  {
+    id: "settings",
+    icon: (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="8" cy="8" r="2.4" />
+        <path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6 5 5M11 11l1.4 1.4M12.4 3.6 11 5M5 11l-1.4 1.4" />
+      </svg>
+    )
+  }
+];
 
 export default function RightPanel({
   selectedShape,
@@ -115,20 +168,21 @@ export default function RightPanel({
 
   return (
     <aside className="right-panel">
-      <div className="tab-bar" role="tablist" aria-label={t("rightPanel.tabsAriaLabel")}>
-        {tabs.map((tab) => (
+      <nav className="right-panel-nav" role="tablist" aria-label={t("rightPanel.tabsAriaLabel")}>
+        {tabItems.map((tab) => (
           <button
-            key={tab}
+            key={tab.id}
             type="button"
             role="tab"
-            aria-selected={activeTab === tab}
-            className={activeTab === tab ? "tab-button active" : "tab-button"}
-            onClick={() => setActiveTab(tab)}
+            aria-selected={activeTab === tab.id}
+            className={activeTab === tab.id ? "right-panel-nav-button active" : "right-panel-nav-button"}
+            onClick={() => setActiveTab(tab.id)}
           >
-            {t(`rightPanel.tabs.${tab}`)}
+            <span className="right-panel-nav-icon">{tab.icon}</span>
+            <span>{t(`rightPanel.tabs.${tab.id}`)}</span>
           </button>
         ))}
-      </div>
+      </nav>
       <div className="tab-content">
         {activeTab === "properties" && (
           <PropertiesPanel

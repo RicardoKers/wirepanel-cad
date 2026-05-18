@@ -147,23 +147,6 @@ export default function PropertiesPanel({
             </div>
           </>
         )}
-        {selectedShape && (
-          <label className="row">
-            {t("properties.layer")}
-            <select
-              value={selectedLayerId}
-              onChange={(event) =>
-                selectedShape.type === "potential"
-                  ? onUpdatePotentialShared(selectedShape.id, { layerId: event.target.value })
-                  : onUpdateShape(selectedShape.id, (shape) => updateLayer(shape, event.target.value))
-              }
-            >
-              {layers.map((layer) => (
-                <option key={layer.id} value={layer.id}>{layer.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
         {selectedComponentInstance && (
           <section className="property-section">
             <h4>{t("properties.componentSection")}: {selectedComponentTag}</h4>
@@ -227,6 +210,11 @@ export default function PropertiesPanel({
                   ))}
               </select>
             </label>
+          </section>
+        )}
+        {selectedComponentInstance && (
+          <section className="property-section">
+            <h4>{t("properties.labelSection")}</h4>
             <label className="row">
               {t("properties.showLabel")}
               <input
@@ -316,8 +304,26 @@ export default function PropertiesPanel({
             </label>
           </section>
         )}
-        {selectedShape && selectedShape.type !== "group" && (
-          <>
+        {selectedShape && (
+          <section className="property-section">
+            <h4>{t("properties.geometrySection")}</h4>
+            <label className="row">
+              {t("properties.layer")}
+              <select
+                value={selectedLayerId}
+                onChange={(event) =>
+                  selectedShape.type === "potential"
+                    ? onUpdatePotentialShared(selectedShape.id, { layerId: event.target.value })
+                    : onUpdateShape(selectedShape.id, (shape) => updateLayer(shape, event.target.value))
+                }
+              >
+                {layers.map((layer) => (
+                  <option key={layer.id} value={layer.id}>{layer.name}</option>
+                ))}
+              </select>
+            </label>
+            {selectedShape.type !== "group" && (
+              <>
             <label className="row">
               {t("properties.line")}
               <input
@@ -522,10 +528,10 @@ export default function PropertiesPanel({
                 } /></label>
               </>
             )}
-          </>
-        )}
-        {selectedShape && selectedShape.type === "group" && groupOrigin && (
-          <>
+              </>
+            )}
+            {selectedShape.type === "group" && groupOrigin && (
+              <>
             <label className="row">
               {t("properties.originX")}
               <input
@@ -554,7 +560,9 @@ export default function PropertiesPanel({
                 }}
               />
             </label>
-          </>
+              </>
+            )}
+          </section>
         )}
       </div>
     </section>
