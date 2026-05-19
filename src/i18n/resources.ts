@@ -48,6 +48,7 @@ export const resources = {
         title: "Drawing Components",
         empty: "No component instances yet.",
         unknownType: "Untyped",
+        address: "Address {{address}}",
         partOf: "Part of {{tag}}"
       },
       settings: {
@@ -172,6 +173,27 @@ export const resources = {
         componentType: "Type",
         partOf: "Part of",
         noParent: "None",
+        showParts: "Show parts",
+        partsPosition: "Parts position",
+        partsPositions: {
+          below: "Below",
+          right: "Right",
+          above: "Above",
+          left: "Left"
+        },
+        partsRotation: "Parts rotation",
+        partsSpacing: "Parts spacing",
+        partsOffset: "Parts offset",
+        partsScale: "Parts scale",
+        partsAddressOffsetX: "Address X",
+        partsAddressOffsetY: "Address Y",
+        showParentLink: "Show main link",
+        parentLinkMode: "Main link",
+        parentLinkModes: {
+          tag: "Tag",
+          address: "Address",
+          tagAndAddress: "Tag + address"
+        },
         showLabel: "Show label",
         labelOffsetX: "Label X",
         labelOffsetY: "Label Y",
@@ -259,6 +281,7 @@ export const resources = {
         title: "Componentes no desenho",
         empty: "Nenhuma inst\u00E2ncia de componente.",
         unknownType: "Sem tipo",
+        address: "Endere\u00E7o {{address}}",
         partOf: "Parte de {{tag}}"
       },
       settings: {
@@ -383,6 +406,27 @@ export const resources = {
         componentType: "Tipo",
         partOf: "Parte de",
         noParent: "Nenhum",
+        showParts: "Mostrar partes",
+        partsPosition: "Posi\u00E7\u00E3o das partes",
+        partsPositions: {
+          below: "Abaixo",
+          right: "\u00C0 direita",
+          above: "Acima",
+          left: "\u00C0 esquerda"
+        },
+        partsRotation: "Rota\u00E7\u00E3o das partes",
+        partsSpacing: "Espa\u00E7amento das partes",
+        partsOffset: "Dist\u00E2ncia das partes",
+        partsScale: "Escala das partes",
+        partsAddressOffsetX: "Endere\u00E7o X",
+        partsAddressOffsetY: "Endere\u00E7o Y",
+        showParentLink: "Mostrar link do principal",
+        parentLinkMode: "Link do principal",
+        parentLinkModes: {
+          tag: "Tag",
+          address: "Endere\u00E7o",
+          tagAndAddress: "Tag + endere\u00E7o"
+        },
         showLabel: "Mostrar etiqueta",
         labelOffsetX: "Etiqueta X",
         labelOffsetY: "Etiqueta Y",

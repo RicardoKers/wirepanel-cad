@@ -116,6 +116,21 @@ export type ComponentLabel = {
   rotation: number;
 };
 
+export type ComponentPartsPosition = "below" | "right" | "above" | "left";
+
+export type ComponentPartsDisplay = {
+  show: boolean;
+  position: ComponentPartsPosition;
+  rotation: number;
+  spacing: number;
+  offset: number;
+  scale: number;
+  addressOffsetX: number;
+  addressOffsetY: number;
+};
+
+export type ComponentParentLinkMode = "tag" | "address" | "tagAndAddress";
+
 export type ComponentInstance = {
   componentId: string;
   definitionId?: string;
@@ -124,6 +139,9 @@ export type ComponentInstance = {
   type: string;
   partOfId?: string;
   partOfTag?: string;
+  partsDisplay?: ComponentPartsDisplay;
+  showParentLink?: boolean;
+  parentLinkMode?: ComponentParentLinkMode;
   pageId: string;
   shapeIds: string[];
   label: ComponentLabel;

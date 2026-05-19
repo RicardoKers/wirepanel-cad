@@ -53,6 +53,7 @@ type ComponentInstanceListItem = {
   instance: ComponentInstance;
   pageName: string;
   bounds: Bounds | null;
+  address: string | null;
 };
 type ComponentParentOption = {
   componentId: string;

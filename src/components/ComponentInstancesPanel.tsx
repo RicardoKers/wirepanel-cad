@@ -5,6 +5,7 @@ type ComponentInstanceListItem = {
   instance: ComponentInstance;
   pageName: string;
   bounds: Bounds | null;
+  address: string | null;
 };
 
 type Bounds = {
@@ -32,7 +33,7 @@ export default function ComponentInstancesPanel({
       </header>
       <div className="panel-body component-instance-list">
         {items.length === 0 && <p className="muted">{t("componentInstances.empty")}</p>}
-        {items.map(({ instance, pageName, bounds }) => {
+        {items.map(({ instance, pageName, bounds, address }) => {
           const tag = `${instance.tagPrefix}${instance.tagNumber}`;
           return (
             <button
@@ -48,7 +49,7 @@ export default function ComponentInstancesPanel({
               <span className="component-instance-tag">{tag}</span>
               <span className="component-instance-meta">
                 <span>{instance.type || t("componentInstances.unknownType")}</span>
-                <span>{pageName}</span>
+                <span>{address ? t("componentInstances.address", { address }) : pageName}</span>
                 {instance.partOfTag && <span>{t("componentInstances.partOf", { tag: instance.partOfTag })}</span>}
               </span>
             </button>

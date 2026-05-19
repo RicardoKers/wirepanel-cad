@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
-import type { ComponentInstance, Layer, LineStyle, PdfSettings, Point, Shape, Tool, ViewState } from "../models";
+import type { ComponentInstance, Layer, LineStyle, Page, PdfSettings, Point, Shape, Tool, ViewState } from "../models";
 import { angleBetween, arcToPath, distance, getShapeBounds, normalizeAngle } from "../utils/geometry";
 import { replacePlaceholders } from "../utils/text";
 import { createId } from "../utils/id";
-import { getMarkerLayout, parseMarkerAddress } from "../utils/markers";
+import { formatMarkerAddress, getMarkerLayout, parseMarkerAddress, pointToMarker } from "../utils/markers";
 
 const defaultLineColor = "#000000";
 const defaultFill = "transparent";
@@ -34,6 +34,7 @@ const pinHoverRadius = 1;
 
 type CanvasViewProps = {
   shapes: Shape[];
+  pages: Page[];
   layers: Layer[];
   activeLayer: Layer | undefined;
   tool: Tool;
@@ -202,6 +203,7 @@ type DistanceCandidate = {
 
 export default function CanvasView({
   shapes,
+  pages,
   layers,
   activeLayer,
   tool,
@@ -1269,8 +1271,173 @@ export default function CanvasView({
       );
     });
 
+  const markerLayout = getMarkerLayout(pdfSettings);
+
+  function findShapeByIdIn(items: Shape[], id: string): Shape | null {
+    for (const shape of items) {
+      if (shape.id === id) return shape;
+      if (shape.type === "group") {
+        const child = findShapeByIdIn(shape.children, id);
+        if (child) return child;
+      }
+    }
+    return null;
+  }
+
+  function mergeBounds(a: Bounds, b: Bounds): Bounds {
+    return {
+      minX: Math.min(a.minX, b.minX),
+      minY: Math.min(a.minY, b.minY),
+      maxX: Math.max(a.maxX, b.maxX),
+      maxY: Math.max(a.maxY, b.maxY)
+    };
+  }
+
+  function getInstanceShapes(instance: ComponentInstance): { shapes: Shape[]; bounds: Bounds; page: Page; pageIndex: number } | null {
+    const targetPageIndex = pages.findIndex((page) => page.id === instance.pageId);
+    const targetPage = pages[targetPageIndex];
+    if (!targetPage) return null;
+    const instanceShapes = instance.shapeIds
+      .map((shapeId) => findShapeByIdIn(targetPage.shapes, shapeId))
+      .filter((item): item is Shape => Boolean(item));
+    if (instanceShapes.length === 0) return null;
+    const bounds = instanceShapes
+      .map((shape) => getShapeBounds(shape))
+      .reduce((acc, item) => mergeBounds(acc, item));
+    return { shapes: instanceShapes, bounds, page: targetPage, pageIndex: targetPageIndex };
+  }
+
+  function getInstanceAddress(instance: ComponentInstance) {
+    const item = getInstanceShapes(instance);
+    if (!item) return "";
+    const bounds = item.bounds;
+    const cell = pointToMarker(
+      {
+        x: (bounds.minX + bounds.maxX) / 2,
+        y: (bounds.minY + bounds.maxY) / 2
+      },
+      markerLayout
+    );
+    return cell ? formatMarkerAddress(item.pageIndex, cell) : "";
+  }
+
+  function buildParentLinkText(instance: ComponentInstance) {
+    if (!instance.partOfId) return "";
+    const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
+    if (!parent) return instance.partOfTag ?? "";
+    const tag = `${parent.tagPrefix}${parent.tagNumber}`;
+    const address = getInstanceAddress(parent);
+    const mode = instance.parentLinkMode ?? "tag";
+    if (mode === "address") return address;
+    if (mode === "tagAndAddress") return address ? `${tag} ${address}` : tag;
+    return tag;
+  }
+
+  const renderedParentLinks = componentInstances
+    .filter((instance) => instance.pageId === pageId && instance.showParentLink && instance.partOfId)
+    .map((instance) => {
+      const linkedItem = getInstanceShapes(instance);
+      if (!linkedItem || !linkedItem.shapes.some((shape) => isShapeVisible(shape))) return null;
+      const text = buildParentLinkText(instance);
+      if (!text) return null;
+      const bounds = linkedItem.bounds;
+      return (
+        <text
+          key={`parent-link-${instance.componentId}`}
+          className="component-link-label"
+          x={bounds.maxX + 3}
+          y={bounds.minY - 2}
+          fontSize={3.2}
+          pointerEvents="none"
+        >
+          {text}
+        </text>
+      );
+    });
+
+  const renderedPartReferences = componentInstances
+    .filter((instance) => instance.pageId === pageId && instance.partsDisplay?.show)
+    .flatMap((parent) => {
+      const parentItem = getInstanceShapes(parent);
+      const display = parent.partsDisplay;
+      if (!parentItem || !display || !parentItem.shapes.some((shape) => isShapeVisible(shape))) return [];
+      const parentBounds = parentItem.bounds;
+      const parts = componentInstances
+        .filter((instance) => instance.partOfId === parent.componentId)
+        .map((part) => {
+          const partItem = getInstanceShapes(part);
+          if (!partItem || !partItem.shapes.some((shape) => isShapeVisible(shape))) return null;
+          const bounds = partItem.bounds;
+          const scale = Math.max(0.1, display.scale);
+          return {
+            part,
+            partItem,
+            bounds,
+            scaledWidth: Math.max(1, bounds.maxX - bounds.minX) * scale,
+            scaledHeight: Math.max(1, bounds.maxY - bounds.minY) * scale
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+      const spacing = Math.max(0, display.spacing);
+      const startOffset = Math.max(0, display.offset ?? spacing);
+      const addressOffsetX = display.addressOffsetX ?? 6;
+      const addressOffsetY = display.addressOffsetY ?? 0;
+      let horizontalOffset = 0;
+      let verticalOffset = 0;
+      return parts.map(({ part, partItem, bounds: partBounds, scaledWidth, scaledHeight }) => {
+        const scale = Math.max(0.1, display.scale);
+        const parentCenterX = (parentBounds.minX + parentBounds.maxX) / 2;
+        const parentCenterY = (parentBounds.minY + parentBounds.maxY) / 2;
+        let symbolCenterX = parentCenterX;
+        let symbolCenterY = parentBounds.maxY + startOffset + scaledHeight / 2;
+        if (display.position === "right") {
+          symbolCenterX = parentBounds.maxX + startOffset + horizontalOffset + scaledWidth / 2;
+          symbolCenterY = parentCenterY;
+          horizontalOffset += scaledWidth + spacing;
+        }
+        if (display.position === "left") {
+          symbolCenterX = parentBounds.minX - startOffset - horizontalOffset - scaledWidth / 2;
+          symbolCenterY = parentCenterY;
+          horizontalOffset += scaledWidth + spacing;
+        }
+        if (display.position === "below") {
+          symbolCenterX = parentCenterX;
+          symbolCenterY = parentBounds.maxY + startOffset + verticalOffset + scaledHeight / 2;
+          verticalOffset += scaledHeight + spacing;
+        }
+        if (display.position === "above") {
+          symbolCenterX = parentCenterX;
+          symbolCenterY = parentBounds.minY - startOffset - verticalOffset - scaledHeight / 2;
+          verticalOffset += scaledHeight + spacing;
+        }
+        const address = getInstanceAddress(part);
+        const textX = symbolCenterX + addressOffsetX;
+        const textY = symbolCenterY + addressOffsetY;
+        const partCenterX = (partBounds.minX + partBounds.maxX) / 2;
+        const partCenterY = (partBounds.minY + partBounds.maxY) / 2;
+        const transform = `translate(${symbolCenterX} ${symbolCenterY}) rotate(${display.rotation}) scale(${scale}) translate(${-partCenterX} ${-partCenterY})`;
+        return (
+          <g key={`part-reference-${parent.componentId}-${part.componentId}`} className="component-part-reference">
+            <g transform={transform}>{partItem.shapes.map((shape) => renderShape(shape, true))}</g>
+            {address && (
+              <text
+                className="component-link-label"
+                x={textX}
+                y={textY}
+                fontSize={3}
+                dominantBaseline="middle"
+                pointerEvents="none"
+              >
+                {address}
+              </text>
+            )}
+          </g>
+        );
+      });
+    });
+
   function renderShape(shape: Shape, suppressPointer: boolean): React.ReactNode {
-    const isSelected = selection.includes(shape.id);
+    const isSelected = !suppressPointer && selection.includes(shape.id);
     const className = isSelected ? "shape selected" : "shape";
     const { strokeDasharray, strokeLinecap } = getLineStyleProps(shape.lineStyle);
     const hitWidth = Math.max(8 / view.scale, shape.lineWidth + 3);
@@ -1971,6 +2138,10 @@ export default function CanvasView({
             </>
           )}
           {renderedShapes}
+          <g className="component-cross-references" pointerEvents="none">
+            {renderedPartReferences}
+            {renderedParentLinks}
+          </g>
           <g className="component-labels" pointerEvents="none">
             {renderedComponentLabels}
           </g>

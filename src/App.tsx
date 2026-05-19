@@ -72,6 +72,15 @@ type Bounds = {
   maxY: number;
 };
 
+function mergeBounds(a: Bounds, b: Bounds): Bounds {
+  return {
+    minX: Math.min(a.minX, b.minX),
+    minY: Math.min(a.minY, b.minY),
+    maxX: Math.max(a.maxX, b.maxX),
+    maxY: Math.max(a.maxY, b.maxY)
+  };
+}
+
 type PotentialLinkTarget = {
   address: string;
   pageIndex: number;
@@ -530,6 +539,7 @@ export default function App() {
     return componentInstances.find((instance) => instance.shapeIds.includes(selectedShape.id)) ?? null;
   }, [componentInstances, selectedShape]);
   const componentInstanceItems = useMemo(() => {
+    const layout = getMarkerLayout(pdfSettings);
     const findShapeById = (items: Shape[], id: string): Shape | null => {
       for (const shape of items) {
         if (shape.id === id) return shape;
@@ -544,15 +554,29 @@ export default function App() {
     return componentInstances
       .map((instance) => {
         const page = pages.find((item) => item.id === instance.pageId);
-        const linkedShape = page
+        const linkedShapes = page
           ? instance.shapeIds
             .map((shapeId) => findShapeById(page.shapes, shapeId))
-            .find((shape): shape is Shape => Boolean(shape))
+            .filter((shape): shape is Shape => Boolean(shape))
+          : [];
+        const bounds = linkedShapes.length > 0
+          ? linkedShapes.map((shape) => getShapeBounds(shape)).reduce((acc, item) => mergeBounds(acc, item))
+          : null;
+        const pageIndex = pages.findIndex((item) => item.id === instance.pageId);
+        const markerCell = bounds
+          ? pointToMarker(
+              {
+                x: (bounds.minX + bounds.maxX) / 2,
+                y: (bounds.minY + bounds.maxY) / 2
+              },
+              layout
+            )
           : null;
         return {
           instance,
           pageName: page?.name || t("app.pageLabel", { number: Math.max(1, pages.findIndex((item) => item.id === instance.pageId) + 1) }),
-          bounds: linkedShape ? getShapeBounds(linkedShape) : null
+          bounds,
+          address: markerCell && pageIndex >= 0 ? formatMarkerAddress(pageIndex, markerCell) : null
         };
       })
       .sort((a, b) => {
@@ -560,14 +584,15 @@ export default function App() {
         const tagB = `${b.instance.tagPrefix}${b.instance.tagNumber}`;
         return tagA.localeCompare(tagB, undefined, { numeric: true });
       });
-  }, [componentInstances, pages, t]);
+  }, [componentInstances, pages, pdfSettings, t]);
   const componentParentOptions = useMemo(
     () =>
       componentInstances
         .map((instance) => ({
           componentId: instance.componentId,
           tag: `${instance.tagPrefix}${instance.tagNumber}`,
-          type: instance.type
+          type: instance.type,
+          partOfId: instance.partOfId
         }))
         .sort((a, b) => a.tag.localeCompare(b.tag, undefined, { numeric: true })),
     [componentInstances]
@@ -1669,6 +1694,24 @@ export default function App() {
         typeof (value as ComponentInstance).partOfId === "string") &&
       (typeof (value as ComponentInstance).partOfTag === "undefined" ||
         typeof (value as ComponentInstance).partOfTag === "string") &&
+      (typeof (value as ComponentInstance).partsDisplay === "undefined" ||
+        (typeof (value as ComponentInstance).partsDisplay === "object" &&
+          (value as ComponentInstance).partsDisplay !== null &&
+          typeof (value as ComponentInstance).partsDisplay?.show === "boolean" &&
+          ["below", "right", "above", "left"].includes((value as ComponentInstance).partsDisplay?.position ?? "") &&
+          typeof (value as ComponentInstance).partsDisplay?.rotation === "number" &&
+          typeof (value as ComponentInstance).partsDisplay?.spacing === "number" &&
+          (typeof (value as ComponentInstance).partsDisplay?.offset === "undefined" ||
+            typeof (value as ComponentInstance).partsDisplay?.offset === "number") &&
+          typeof (value as ComponentInstance).partsDisplay?.scale === "number" &&
+          (typeof (value as ComponentInstance).partsDisplay?.addressOffsetX === "undefined" ||
+            typeof (value as ComponentInstance).partsDisplay?.addressOffsetX === "number") &&
+          (typeof (value as ComponentInstance).partsDisplay?.addressOffsetY === "undefined" ||
+            typeof (value as ComponentInstance).partsDisplay?.addressOffsetY === "number"))) &&
+      (typeof (value as ComponentInstance).showParentLink === "undefined" ||
+        typeof (value as ComponentInstance).showParentLink === "boolean") &&
+      (typeof (value as ComponentInstance).parentLinkMode === "undefined" ||
+        ["tag", "address", "tagAndAddress"].includes((value as ComponentInstance).parentLinkMode ?? "")) &&
       typeof (value as ComponentInstance).pageId === "string" &&
       Array.isArray((value as ComponentInstance).shapeIds) &&
       (value as ComponentInstance).shapeIds.every((shapeId) => typeof shapeId === "string") &&
@@ -1717,7 +1760,7 @@ export default function App() {
         setLayers(data.layers);
         setPages(data.pages);
         setComponents(data.components);
-        setComponentInstances(data.componentInstances);
+        setComponentInstances(normalizePartTags(data.componentInstances));
         setActiveLayerId(data.layers[0]?.id ?? "");
         setActivePageId(data.pages[0]?.id ?? "");
         setSelectionByPage({});
@@ -1852,6 +1895,33 @@ export default function App() {
         };
   }
 
+  function getDefaultPartsDisplay() {
+    return {
+      show: false,
+      position: "below" as const,
+      rotation: 0,
+      spacing: 5,
+      offset: 5,
+      scale: 1,
+      addressOffsetX: 6,
+      addressOffsetY: 0
+    };
+  }
+
+  function normalizePartTags(instances: ComponentInstance[]) {
+    return instances.map((instance) => {
+      if (!instance.partOfId) return instance;
+      const parent = instances.find((item) => item.componentId === instance.partOfId);
+      if (!parent) return instance;
+      return {
+        ...instance,
+        tagPrefix: parent.tagPrefix,
+        tagNumber: parent.tagNumber,
+        partOfTag: `${parent.tagPrefix}${parent.tagNumber}`
+      };
+    });
+  }
+
   function openCreateComponentDialog() {
     if (!selectedShape || selectedShape.type !== "group") return;
     if (componentInstances.some((instance) => instance.shapeIds.includes(selectedShape.id))) return;
@@ -1868,37 +1938,45 @@ export default function App() {
   function handleCreateComponentSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!createComponentDialog) return;
-    const tagPrefix = createComponentDialog.tagPrefix.trim().toUpperCase();
-    if (!tagPrefix) return;
-    const tagNumber = getNextComponentTagNumber(tagPrefix);
     const componentType = createComponentDialog.type.trim() || t("app.componentDefaultType");
     const parentComponent = componentParentOptions.find((option) => option.componentId === createComponentDialog.partOfId);
+    const parentInstance = parentComponent
+      ? componentInstances.find((instance) => instance.componentId === parentComponent.componentId)
+      : null;
+    const tagPrefix = parentInstance?.tagPrefix ?? createComponentDialog.tagPrefix.trim().toUpperCase();
+    if (!tagPrefix) return;
+    const tagNumber = parentInstance?.tagNumber ?? getNextComponentTagNumber(tagPrefix);
     const partOfTag = parentComponent?.tag ?? createComponentDialog.partOfTag.trim();
     const targetPage = pages.find((page) => page.id === createComponentDialog.pageId);
     const targetShape = targetPage?.shapes.find((shape) => shape.id === createComponentDialog.shapeId);
     if (!targetPage || !targetShape || targetShape.type !== "group") return;
     if (componentInstances.some((instance) => instance.shapeIds.includes(createComponentDialog.shapeId))) return;
 
-    setComponentInstances((prev) => [
-      ...prev,
-      {
-        componentId: createId("componentInstance"),
-        tagPrefix,
-        tagNumber,
-        type: componentType,
-        partOfId: parentComponent?.componentId,
-        partOfTag: partOfTag || undefined,
-        pageId: createComponentDialog.pageId,
-        shapeIds: [createComponentDialog.shapeId],
-        label: getDefaultComponentLabel()
-      }
-    ]);
+    setComponentInstances((prev) =>
+      normalizePartTags([
+        ...prev,
+        {
+          componentId: createId("componentInstance"),
+          tagPrefix,
+          tagNumber,
+          type: componentType,
+          partOfId: parentComponent?.componentId,
+          partOfTag: partOfTag || undefined,
+          showParentLink: Boolean(parentComponent),
+          parentLinkMode: "tag",
+          partsDisplay: getDefaultPartsDisplay(),
+          pageId: createComponentDialog.pageId,
+          shapeIds: [createComponentDialog.shapeId],
+          label: getDefaultComponentLabel()
+        }
+      ])
+    );
     setCreateComponentDialog(null);
   }
 
   function updateComponentInstance(componentId: string, updater: (instance: ComponentInstance) => ComponentInstance) {
     setComponentInstances((prev) =>
-      prev.map((instance) => (instance.componentId === componentId ? updater(instance) : instance))
+      normalizePartTags(prev.map((instance) => (instance.componentId === componentId ? updater(instance) : instance)))
     );
   }
 
@@ -2126,6 +2204,7 @@ export default function App() {
           tagPrefix,
           tagNumber: getNextComponentTagNumberFrom(tagPrefix, prev),
           type: component.defaultComponentType?.trim() || component.name || t("app.componentDefaultType"),
+          partsDisplay: getDefaultPartsDisplay(),
           pageId: activePageId,
           shapeIds: newShapes.map((shape) => shape.id),
           label: getDefaultComponentLabel(component.defaultLabel)
@@ -2576,6 +2655,7 @@ export default function App() {
         <CanvasView
           key={activePageId}
           shapes={shapes}
+          pages={pages}
           layers={layers}
           activeLayer={activeLayer}
           tool={tool}
@@ -2829,18 +2909,21 @@ export default function App() {
                   }
                 >
                   <option value="">{t("app.componentNoParent")}</option>
-                  {componentParentOptions.map((option) => (
-                    <option key={option.componentId} value={option.componentId}>
-                      {option.tag}{option.type ? ` - ${option.type}` : ""}
-                    </option>
-                  ))}
+                  {componentParentOptions
+                    .filter((option) => !option.partOfId)
+                    .map((option) => (
+                      <option key={option.componentId} value={option.componentId}>
+                        {option.tag}{option.type ? ` - ${option.type}` : ""}
+                      </option>
+                    ))}
                 </select>
               </label>
               <p className="muted small">
                 {t("app.componentTagPreview", {
-                  tag: createComponentDialog.tagPrefix.trim()
+                  tag: componentParentOptions.find((option) => option.componentId === createComponentDialog.partOfId)?.tag ??
+                    (createComponentDialog.tagPrefix.trim()
                     ? `${createComponentDialog.tagPrefix.trim().toUpperCase()}${getNextComponentTagNumber(createComponentDialog.tagPrefix)}`
-                    : "-"
+                    : "-")
                 })}
               </p>
             </div>
@@ -2848,7 +2931,11 @@ export default function App() {
               <button type="button" className="tool-button" onClick={() => setCreateComponentDialog(null)}>
                 {t("app.cancel")}
               </button>
-              <button type="submit" className="tool-button primary" disabled={!createComponentDialog.tagPrefix.trim()}>
+              <button
+                type="submit"
+                className="tool-button primary"
+                disabled={!createComponentDialog.tagPrefix.trim() && !createComponentDialog.partOfId}
+              >
                 {t("app.create")}
               </button>
             </footer>

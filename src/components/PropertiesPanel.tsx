@@ -34,6 +34,7 @@ type ComponentParentOption = {
   componentId: string;
   tag: string;
   type: string;
+  partOfId?: string;
 };
 
 export default function PropertiesPanel({
@@ -69,6 +70,19 @@ export default function PropertiesPanel({
   function updateSelectedComponent(updater: (instance: ComponentInstance) => ComponentInstance) {
     if (!selectedComponentInstance) return;
     onUpdateComponentInstance(selectedComponentInstance.componentId, updater);
+  }
+
+  function getPartsDisplayWithDefaults(instance: ComponentInstance): NonNullable<ComponentInstance["partsDisplay"]> {
+    return {
+      show: instance.partsDisplay?.show ?? false,
+      position: instance.partsDisplay?.position ?? "below",
+      rotation: instance.partsDisplay?.rotation ?? 0,
+      spacing: instance.partsDisplay?.spacing ?? 5,
+      offset: instance.partsDisplay?.offset ?? 5,
+      scale: instance.partsDisplay?.scale ?? 1,
+      addressOffsetX: instance.partsDisplay?.addressOffsetX ?? 6,
+      addressOffsetY: instance.partsDisplay?.addressOffsetY ?? 0
+    };
   }
 
   function updateLayer(shape: Shape, layerId: string): Shape {
@@ -202,7 +216,7 @@ export default function PropertiesPanel({
               >
                 <option value="">{t("properties.noParent")}</option>
                 {componentParentOptions
-                  .filter((option) => option.componentId !== selectedComponentInstance.componentId)
+                  .filter((option) => option.componentId !== selectedComponentInstance.componentId && !option.partOfId)
                   .map((option) => (
                     <option key={option.componentId} value={option.componentId}>
                       {option.tag}{option.type ? ` - ${option.type}` : ""}
@@ -210,6 +224,194 @@ export default function PropertiesPanel({
                   ))}
               </select>
             </label>
+            <label className="row">
+              {t("properties.showParts")}
+              <input
+                type="checkbox"
+                checked={Boolean(selectedComponentInstance.partsDisplay?.show)}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => ({
+                    ...instance,
+                    partsDisplay: {
+                      ...getPartsDisplayWithDefaults(instance),
+                      show: event.target.checked
+                    }
+                  }))
+                }
+              />
+            </label>
+            {selectedComponentInstance.partsDisplay?.show && (
+              <>
+                <label className="row">
+                  {t("properties.partsPosition")}
+                  <select
+                    value={selectedComponentInstance.partsDisplay.position}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          position: event.target.value as NonNullable<ComponentInstance["partsDisplay"]>["position"]
+                        }
+                      }))
+                    }
+                  >
+                    <option value="below">{t("properties.partsPositions.below")}</option>
+                    <option value="right">{t("properties.partsPositions.right")}</option>
+                    <option value="above">{t("properties.partsPositions.above")}</option>
+                    <option value="left">{t("properties.partsPositions.left")}</option>
+                  </select>
+                </label>
+                <label className="row">
+                  {t("properties.partsRotation")}
+                  <input
+                    type="number"
+                    step={15}
+                    value={selectedComponentInstance.partsDisplay.rotation}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          rotation: Number(event.target.value) || 0
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsSpacing")}
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={selectedComponentInstance.partsDisplay.spacing}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          spacing: Math.max(0, Number(event.target.value) || 0)
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsOffset")}
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={selectedComponentInstance.partsDisplay.offset ?? 5}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          offset: Math.max(0, Number(event.target.value) || 0)
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsScale")}
+                  <input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    value={selectedComponentInstance.partsDisplay.scale}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          scale: Math.max(0.1, Number(event.target.value) || 1)
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsAddressOffsetX")}
+                  <input
+                    type="number"
+                    step={1}
+                    value={selectedComponentInstance.partsDisplay.addressOffsetX ?? 6}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          addressOffsetX: Number(event.target.value) || 0
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsAddressOffsetY")}
+                  <input
+                    type="number"
+                    step={1}
+                    value={selectedComponentInstance.partsDisplay.addressOffsetY ?? 0}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          addressOffsetY: Number(event.target.value) || 0
+                        }
+                      }))
+                    }
+                  />
+                </label>
+              </>
+            )}
+            {selectedComponentInstance.partOfId && (
+              <>
+                <label className="row">
+                  {t("properties.showParentLink")}
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedComponentInstance.showParentLink)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        showParentLink: event.target.checked,
+                        parentLinkMode: instance.parentLinkMode ?? "tag"
+                      }))
+                    }
+                  />
+                </label>
+                {selectedComponentInstance.showParentLink && (
+                  <label className="row">
+                    {t("properties.parentLinkMode")}
+                    <select
+                      value={selectedComponentInstance.parentLinkMode ?? "tag"}
+                      onChange={(event) =>
+                        updateSelectedComponent((instance) => ({
+                          ...instance,
+                          parentLinkMode: event.target.value as ComponentInstance["parentLinkMode"]
+                        }))
+                      }
+                    >
+                      <option value="tag">{t("properties.parentLinkModes.tag")}</option>
+                      <option value="address">{t("properties.parentLinkModes.address")}</option>
+                      <option value="tagAndAddress">{t("properties.parentLinkModes.tagAndAddress")}</option>
+                    </select>
+                  </label>
+                )}
+              </>
+            )}
           </section>
         )}
         {selectedComponentInstance && (

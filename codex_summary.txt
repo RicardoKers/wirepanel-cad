@@ -240,6 +240,119 @@ Copy/paste and intelligent template status
   - Confirm the inserted template creates the next K number automatically.
   - Download the template JSON and confirm it contains `defaultTagPrefix`.
 
+Cross-reference planning
+- Goal:
+  - Connect a main component and its parts, such as a contactor coil K1 with main contacts and auxiliary contacts.
+  - Use the existing `partOfId`/`partOfTag` relationship as the first link between parts and the main component.
+  - Generate automatic drawing addresses using the page marker grid.
+- Address format:
+  - `page.rowColumn`
+  - Example: `1.C2` means page 1, row C, column 2.
+  - Address should be calculated from the linked component geometry and the sheet marker layout.
+- Planned implementation phases:
+  - Phase A: automatic component addresses.
+    - Calculate address from component bounds center and current PDF/page marker settings.
+    - Show address in the right-panel Components list.
+    - Use this as the first validation layer before drawing cross-reference graphics.
+  - Phase B: flexible part display.
+    - Keep the main component as a normal component, such as a contactor coil.
+    - Keep contacts/secondary elements as normal components with `Parte de` pointing to the main component.
+    - On the main component, allow `Mostrar partes` with position, rotation, spacing and scale.
+    - On the secondary component, allow `Mostrar link do principal` with link modes tag, address or tag + address.
+    - Use the actual secondary component drawing as the copied reference symbol near the main component.
+  - Phase C: linked-part list.
+    - For a selected/main component, show linked parts grouped by `partOfId`.
+    - Show tag/type/address for each linked part.
+  - Phase D: generated cross-reference graphics.
+    - For a main component, draw simplified reference symbols near it.
+    - Contactors default to references below the coil.
+    - Breakers/default devices can use references to the right.
+    - Each reference should show mini symbol plus the linked part address.
+  - Phase E: PDF export.
+    - Export generated cross-reference graphics consistently with canvas rendering.
+  - Phase F: manual positioning/configuration.
+    - Allow hiding/showing references.
+    - Allow choosing position/orientation such as below/right/left/above.
+    - Later allow moving a reference block manually.
+- Recommended test plan:
+  - Place/create K1 as a main component in a known marker cell.
+  - Place/create one or more contacts in different marker cells.
+  - Set the contacts as `Parte de K1`.
+  - Confirm the Components panel shows each component with the expected address, such as `1.C2`.
+  - Move a contact to another marker cell and confirm its address updates.
+  - Change PDF orientation/size/margins and confirm addresses still follow the visible marker grid.
+  - Save/load JSON and confirm relationships and addresses still compute correctly after reload.
+  - Later, after generated references are implemented, confirm the mini symbols appear near the main component and export to PDF.
+- Phase A implementation status:
+  - Implemented automatic address calculation for component instances.
+  - Address is computed from the center of the linked component bounds using the current marker grid layout.
+  - The right-panel Components list now displays `Endereco 1.C2` / `Address 1.C2` when the component is inside the marker grid.
+  - Components outside the marker grid fall back to the page name.
+  - `npm run build` passed after this implementation.
+- Phase B implementation status:
+  - Replaced the rigid role/symbol approach with flexible display settings.
+  - Added optional component instance metadata:
+    - `partsDisplay.show`
+    - `partsDisplay.position`: below, right, above, left.
+    - `partsDisplay.rotation`
+    - `partsDisplay.spacing`
+    - `partsDisplay.offset`
+    - `partsDisplay.scale`
+    - `partsDisplay.addressOffsetX`
+    - `partsDisplay.addressOffsetY`
+    - `showParentLink`
+    - `parentLinkMode`: tag, address, tagAndAddress.
+  - Object > Component now has controls for:
+    - Mostrar partes.
+    - Posicao das partes.
+    - Rotacao das partes.
+    - Espacamento das partes.
+    - Distancia das partes.
+    - Escala das partes.
+    - Endereco X/Y.
+    - Mostrar link do principal, only when the component has `Parte de`.
+    - Link do principal mode.
+  - Canvas now renders:
+    - Parent-link labels next to secondary components when enabled.
+    - Copies of linked secondary component drawings near the main component when `Mostrar partes` is enabled.
+    - The copied part reference uses the actual drawing geometry of the linked part and shows the linked part address beside it.
+    - Part references are aligned by the center of the copied symbol, not by the address text.
+    - Right/left positions stack parts horizontally; below/above positions stack parts vertically.
+    - Right/left stacking uses accumulated symbol widths so references do not overlap when parts have different sizes.
+    - Parts inherit the tag prefix and number from their parent component.
+    - When a component is set as `Parte de` another component, its `tagPrefix`/`tagNumber` are synchronized with the parent.
+    - When a parent tag changes, linked parts are synchronized to the same tag/number.
+    - Loading JSON also normalizes linked part tags to their parent tags.
+    - `partsDisplay.offset` controls the distance from the main component to the first displayed part.
+    - `partsDisplay.addressOffsetX/Y` controls address text position measured from the copied part symbol center, independent of symbol size and rotation.
+    - `Parte de` selectors hide components that are already parts of another component.
+    - Part reference rendering now uses all shapes linked to each component, not only the first linked shape.
+    - Copied part references suppress selection styling so selecting the original part does not highlight the copied reference.
+    - User validation on 2026-05-19: this behavior worked correctly after the fixes.
+  - PDF export of these generated part references is not implemented yet.
+  - `npm run build` passed after this implementation.
+  - Recommended user tests:
+    - Create/select K1 as the main component.
+    - Create/select one or more contacts and set `Parte de` to K1.
+    - On each contact, enable `Mostrar link do principal` and test tag/address/tag+address modes.
+    - On K1, enable `Mostrar partes`.
+    - Test positions below/right/above/left.
+    - Change spacing, scale and rotation and confirm the copied contact references update.
+    - Move a linked contact to another marker cell and confirm the address beside the copied reference updates.
+    - Save/load JSON and confirm settings persist.
+    - Export PDF only after the next phase adds PDF support for generated part references.
+- Immediate next improvement for next session:
+  - Add rotation control for the address/link text shown beside copied part references on the main component.
+  - This should rotate the text independently of the copied part symbol rotation.
+  - Likely data model addition:
+    - `partsDisplay.addressRotation`
+  - Add Object > Component control:
+    - Rotacao do endereco / Address rotation.
+  - Render behavior:
+    - Text remains positioned by `addressOffsetX/Y` from the copied symbol center.
+    - Text rotates around its own anchor point.
+    - Canvas first, then PDF support later.
+
 Design direction for intelligent components
 - Goal: evolve from graphical blocks to intelligent project components.
 - A component instance should have an invisible unique `componentId`.
