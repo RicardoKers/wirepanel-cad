@@ -187,6 +187,7 @@ export const resources = {
         partsScale: "Parts scale",
         partsAddressOffsetX: "Address X",
         partsAddressOffsetY: "Address Y",
+        partsAddressRotation: "Address rotation",
         showParentLink: "Show main link",
         parentLinkMode: "Main link",
         parentLinkModes: {
@@ -420,6 +421,7 @@ export const resources = {
         partsScale: "Escala das partes",
         partsAddressOffsetX: "Endere\u00E7o X",
         partsAddressOffsetY: "Endere\u00E7o Y",
+        partsAddressRotation: "Rota\u00E7\u00E3o do endere\u00E7o",
         showParentLink: "Mostrar link do principal",
         parentLinkMode: "Link do principal",
         parentLinkModes: {

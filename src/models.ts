@@ -127,6 +127,7 @@ export type ComponentPartsDisplay = {
   scale: number;
   addressOffsetX: number;
   addressOffsetY: number;
+  addressRotation: number;
 };
 
 export type ComponentParentLinkMode = "tag" | "address" | "tagAndAddress";
@@ -139,6 +140,7 @@ export type ComponentInstance = {
   type: string;
   partOfId?: string;
   partOfTag?: string;
+  partOrder?: number;
   partsDisplay?: ComponentPartsDisplay;
   showParentLink?: boolean;
   parentLinkMode?: ComponentParentLinkMode;

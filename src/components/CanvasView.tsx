@@ -1333,6 +1333,18 @@ export default function CanvasView({
     return tag;
   }
 
+  function handleComponentLinkPointerDown(
+    event: ReactPointerEvent<SVGTextElement>,
+    linkTarget?: { pageIndex: number; bounds: Bounds }
+  ) {
+    if (!linkTarget || !onNavigateToLink) return;
+    const isModifier = event.metaKey || event.ctrlKey;
+    if (!isModifier) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onNavigateToLink(linkTarget.pageIndex, linkTarget.bounds);
+  }
+
   const renderedParentLinks = componentInstances
     .filter((instance) => instance.pageId === pageId && instance.showParentLink && instance.partOfId)
     .map((instance) => {
@@ -1341,6 +1353,8 @@ export default function CanvasView({
       const text = buildParentLinkText(instance);
       if (!text) return null;
       const bounds = linkedItem.bounds;
+      const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
+      const parentItem = parent ? getInstanceShapes(parent) : null;
       return (
         <text
           key={`parent-link-${instance.componentId}`}
@@ -1348,7 +1362,13 @@ export default function CanvasView({
           x={bounds.maxX + 3}
           y={bounds.minY - 2}
           fontSize={3.2}
-          pointerEvents="none"
+          pointerEvents="all"
+          onPointerDown={(event) =>
+            handleComponentLinkPointerDown(
+              event,
+              parentItem ? { pageIndex: parentItem.pageIndex, bounds: parentItem.bounds } : undefined
+            )
+          }
         >
           {text}
         </text>
@@ -1364,6 +1384,7 @@ export default function CanvasView({
       const parentBounds = parentItem.bounds;
       const parts = componentInstances
         .filter((instance) => instance.partOfId === parent.componentId)
+        .sort((a, b) => (a.partOrder ?? 0) - (b.partOrder ?? 0))
         .map((part) => {
           const partItem = getInstanceShapes(part);
           if (!partItem || !partItem.shapes.some((shape) => isShapeVisible(shape))) return null;
@@ -1382,6 +1403,7 @@ export default function CanvasView({
       const startOffset = Math.max(0, display.offset ?? spacing);
       const addressOffsetX = display.addressOffsetX ?? 6;
       const addressOffsetY = display.addressOffsetY ?? 0;
+      const addressRotation = display.addressRotation ?? 0;
       let horizontalOffset = 0;
       let verticalOffset = 0;
       return parts.map(({ part, partItem, bounds: partBounds, scaledWidth, scaledHeight }) => {
@@ -1426,7 +1448,14 @@ export default function CanvasView({
                 y={textY}
                 fontSize={3}
                 dominantBaseline="middle"
-                pointerEvents="none"
+                transform={addressRotation ? `rotate(${addressRotation} ${textX} ${textY})` : undefined}
+                pointerEvents="all"
+                onPointerDown={(event) =>
+                  handleComponentLinkPointerDown(event, {
+                    pageIndex: partItem.pageIndex,
+                    bounds: partItem.bounds
+                  })
+                }
               >
                 {address}
               </text>
@@ -2138,7 +2167,7 @@ export default function CanvasView({
             </>
           )}
           {renderedShapes}
-          <g className="component-cross-references" pointerEvents="none">
+          <g className="component-cross-references">
             {renderedPartReferences}
             {renderedParentLinks}
           </g>

@@ -727,6 +727,7 @@ body {
   stroke-width: 0.65;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
+  cursor: pointer;
 }
 
 .component-part-reference {

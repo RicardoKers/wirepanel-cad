@@ -81,7 +81,8 @@ export default function PropertiesPanel({
       offset: instance.partsDisplay?.offset ?? 5,
       scale: instance.partsDisplay?.scale ?? 1,
       addressOffsetX: instance.partsDisplay?.addressOffsetX ?? 6,
-      addressOffsetY: instance.partsDisplay?.addressOffsetY ?? 0
+      addressOffsetY: instance.partsDisplay?.addressOffsetY ?? 0,
+      addressRotation: instance.partsDisplay?.addressRotation ?? 0
     };
   }
 
@@ -369,6 +370,24 @@ export default function PropertiesPanel({
                           ...getPartsDisplayWithDefaults(instance),
                           show: true,
                           addressOffsetY: Number(event.target.value) || 0
+                        }
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.partsAddressRotation")}
+                  <input
+                    type="number"
+                    step={15}
+                    value={selectedComponentInstance.partsDisplay.addressRotation ?? 0}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        partsDisplay: {
+                          ...getPartsDisplayWithDefaults(instance),
+                          show: true,
+                          addressRotation: Number(event.target.value) || 0
                         }
                       }))
                     }

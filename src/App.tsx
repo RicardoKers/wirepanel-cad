@@ -1694,6 +1694,8 @@ export default function App() {
         typeof (value as ComponentInstance).partOfId === "string") &&
       (typeof (value as ComponentInstance).partOfTag === "undefined" ||
         typeof (value as ComponentInstance).partOfTag === "string") &&
+      (typeof (value as ComponentInstance).partOrder === "undefined" ||
+        typeof (value as ComponentInstance).partOrder === "number") &&
       (typeof (value as ComponentInstance).partsDisplay === "undefined" ||
         (typeof (value as ComponentInstance).partsDisplay === "object" &&
           (value as ComponentInstance).partsDisplay !== null &&
@@ -1707,7 +1709,9 @@ export default function App() {
           (typeof (value as ComponentInstance).partsDisplay?.addressOffsetX === "undefined" ||
             typeof (value as ComponentInstance).partsDisplay?.addressOffsetX === "number") &&
           (typeof (value as ComponentInstance).partsDisplay?.addressOffsetY === "undefined" ||
-            typeof (value as ComponentInstance).partsDisplay?.addressOffsetY === "number"))) &&
+            typeof (value as ComponentInstance).partsDisplay?.addressOffsetY === "number") &&
+          (typeof (value as ComponentInstance).partsDisplay?.addressRotation === "undefined" ||
+            typeof (value as ComponentInstance).partsDisplay?.addressRotation === "number"))) &&
       (typeof (value as ComponentInstance).showParentLink === "undefined" ||
         typeof (value as ComponentInstance).showParentLink === "boolean") &&
       (typeof (value as ComponentInstance).parentLinkMode === "undefined" ||
@@ -1904,7 +1908,8 @@ export default function App() {
       offset: 5,
       scale: 1,
       addressOffsetX: 6,
-      addressOffsetY: 0
+      addressOffsetY: 0,
+      addressRotation: 0
     };
   }
 
@@ -1920,6 +1925,14 @@ export default function App() {
         partOfTag: `${parent.tagPrefix}${parent.tagNumber}`
       };
     });
+  }
+
+  function getNextPartOrder(parentId: string, instances: ComponentInstance[]) {
+    const orders = instances
+      .filter((instance) => instance.partOfId === parentId)
+      .map((instance) => instance.partOrder)
+      .filter((order): order is number => typeof order === "number" && Number.isFinite(order));
+    return orders.length > 0 ? Math.max(...orders) + 1 : 1;
   }
 
   function openCreateComponentDialog() {
@@ -1962,6 +1975,9 @@ export default function App() {
           type: componentType,
           partOfId: parentComponent?.componentId,
           partOfTag: partOfTag || undefined,
+          partOrder: parentComponent?.componentId
+            ? getNextPartOrder(parentComponent.componentId, prev)
+            : undefined,
           showParentLink: Boolean(parentComponent),
           parentLinkMode: "tag",
           partsDisplay: getDefaultPartsDisplay(),
@@ -1975,9 +1991,19 @@ export default function App() {
   }
 
   function updateComponentInstance(componentId: string, updater: (instance: ComponentInstance) => ComponentInstance) {
-    setComponentInstances((prev) =>
-      normalizePartTags(prev.map((instance) => (instance.componentId === componentId ? updater(instance) : instance)))
-    );
+    setComponentInstances((prev) => {
+      const current = prev.find((instance) => instance.componentId === componentId);
+      const updated = prev.map((instance) => {
+        if (instance.componentId !== componentId) return instance;
+        const next = updater(instance);
+        if (!next.partOfId) return { ...next, partOrder: undefined };
+        if (next.partOfId !== instance.partOfId || typeof next.partOrder !== "number") {
+          return { ...next, partOrder: getNextPartOrder(next.partOfId, prev) };
+        }
+        return next;
+      });
+      return current ? normalizePartTags(updated) : prev;
+    });
   }
 
   function handleExportComponent(id: string) {
@@ -2165,6 +2191,7 @@ export default function App() {
               tagNumber,
               partOfId: undefined,
               partOfTag: undefined,
+              partOrder: undefined,
               pageId: activePageId,
               shapeIds: nextShapeIds,
               label: { ...instance.label }

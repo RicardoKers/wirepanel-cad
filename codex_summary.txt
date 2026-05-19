@@ -329,6 +329,9 @@ Cross-reference planning
     - Part reference rendering now uses all shapes linked to each component, not only the first linked shape.
     - Copied part references suppress selection styling so selecting the original part does not highlight the copied reference.
     - User validation on 2026-05-19: this behavior worked correctly after the fixes.
+    - Part display order is controlled by insertion order using `partOrder`.
+    - When a component is assigned to `Parte de`, it receives the next order for that parent.
+    - Removing `Parte de` clears the order; assigning it again adds it to the end of the displayed parts.
   - PDF export of these generated part references is not implemented yet.
   - `npm run build` passed after this implementation.
   - Recommended user tests:
@@ -342,16 +345,16 @@ Cross-reference planning
     - Save/load JSON and confirm settings persist.
     - Export PDF only after the next phase adds PDF support for generated part references.
 - Immediate next improvement for next session:
-  - Add rotation control for the address/link text shown beside copied part references on the main component.
-  - This should rotate the text independently of the copied part symbol rotation.
-  - Likely data model addition:
-    - `partsDisplay.addressRotation`
-  - Add Object > Component control:
-    - Rotacao do endereco / Address rotation.
-  - Render behavior:
-    - Text remains positioned by `addressOffsetX/Y` from the copied symbol center.
-    - Text rotates around its own anchor point.
-    - Canvas first, then PDF support later.
+  - Add PDF export support for generated part references and their link/address text.
+  - Consider adding rotation for parent-link text shown beside secondary components if needed.
+- Latest link/address text update:
+  - Added `partsDisplay.addressRotation`.
+  - Added Object > Component control: Rotacao do endereco / Address rotation.
+  - Address text shown beside copied part references rotates around its own anchor point.
+  - Address text remains positioned by `addressOffsetX/Y` from the copied symbol center.
+  - Address text beside copied part references is now a Ctrl+click navigation link to the real part component location.
+  - Parent-link text shown beside secondary components is now a Ctrl+click navigation link to the main component location.
+  - These navigation links currently work on canvas; PDF support remains future work.
 
 Design direction for intelligent components
 - Goal: evolve from graphical blocks to intelligent project components.
