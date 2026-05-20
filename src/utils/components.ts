@@ -86,6 +86,10 @@ export function createComponentDefinition(
     defaultTagPrefix?: string;
     defaultComponentType?: string;
     defaultLabel?: ComponentLabel;
+    defaultShowParentLink?: boolean;
+    defaultParentLinkOffsetX?: number;
+    defaultParentLinkOffsetY?: number;
+    defaultParentLinkRotation?: number;
   }
 ): Component {
   const bounds = getComponentBounds(sourceShapes);
@@ -106,7 +110,11 @@ export function createComponentDefinition(
     gridOffsetY: safeGrid ? ((originY % safeGrid) + safeGrid) % safeGrid : 0,
     defaultTagPrefix: options.defaultTagPrefix?.trim().toUpperCase() || undefined,
     defaultComponentType: options.defaultComponentType?.trim() || undefined,
-    defaultLabel: options.defaultLabel ? { ...options.defaultLabel } : undefined
+    defaultLabel: options.defaultLabel ? { ...options.defaultLabel } : undefined,
+    defaultShowParentLink: options.defaultShowParentLink,
+    defaultParentLinkOffsetX: options.defaultParentLinkOffsetX,
+    defaultParentLinkOffsetY: options.defaultParentLinkOffsetY,
+    defaultParentLinkRotation: options.defaultParentLinkRotation
   };
 }
 
@@ -205,7 +213,11 @@ export function buildAppLibraryComponentFile(component: Component): AppLibraryCo
     normalizeIds: true,
     defaultTagPrefix: component.defaultTagPrefix,
     defaultComponentType: component.defaultComponentType,
-    defaultLabel: component.defaultLabel
+    defaultLabel: component.defaultLabel,
+    defaultShowParentLink: component.defaultShowParentLink,
+    defaultParentLinkOffsetX: component.defaultParentLinkOffsetX,
+    defaultParentLinkOffsetY: component.defaultParentLinkOffsetY,
+    defaultParentLinkRotation: component.defaultParentLinkRotation
   });
 
   return {
@@ -253,7 +265,15 @@ export function isComponentValue(value: unknown): value is Component {
     (typeof (value as Component).defaultTagPrefix === "undefined" ||
       typeof (value as Component).defaultTagPrefix === "string") &&
     (typeof (value as Component).defaultComponentType === "undefined" ||
-      typeof (value as Component).defaultComponentType === "string");
+      typeof (value as Component).defaultComponentType === "string") &&
+    (typeof (value as Component).defaultShowParentLink === "undefined" ||
+      typeof (value as Component).defaultShowParentLink === "boolean") &&
+    (typeof (value as Component).defaultParentLinkOffsetX === "undefined" ||
+      typeof (value as Component).defaultParentLinkOffsetX === "number") &&
+    (typeof (value as Component).defaultParentLinkOffsetY === "undefined" ||
+      typeof (value as Component).defaultParentLinkOffsetY === "number") &&
+    (typeof (value as Component).defaultParentLinkRotation === "undefined" ||
+      typeof (value as Component).defaultParentLinkRotation === "number");
 }
 
 export function isAppLibraryComponentFile(value: unknown): value is AppLibraryComponentFile {

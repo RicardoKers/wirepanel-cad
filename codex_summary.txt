@@ -82,6 +82,12 @@ Latest local changes ready to commit
   - Visible group labels and visible button text were removed to reduce vertical and horizontal footprint.
   - Top toolbar was reorganized into unlabeled functional groups separated by dividers: file, view, history, edit, drawing, electrical and help.
   - Toolbar now exposes frequent edit actions: undo, redo, copy, cut, paste, delete selection, group, ungroup and create component.
+  - Canvas hit testing was refined for dense drawings: selection tolerance now follows screen pixels/zoom, invisible hit areas shrink when zoomed in, and clicks no longer fall back to the oversized hit element when no nearby candidate is found.
+  - Maximum canvas zoom increased from 40x to 80x.
+  - Repeated clicks near the same point now cycle through overlapping selectable candidates.
+  - Selection transform actions moved from the Object properties panel to the selection context menu.
+  - Context menu now exposes delete, rotate, mirror, align left/center/right/top/middle/bottom, group, ungroup, create component and move to layer. Alignment uses the selection bounds as reference.
+  - Context menus now have a maximum viewport-aware height and internal mouse-wheel scrolling to avoid running off-screen.
   - File/upload/help/export actions remain functionally unchanged.
 - The author signature now reads `Kerschbaumer - IFC Luzerna - V. 0.1`.
 - These changes are ready to commit at the time this summary was updated.
@@ -267,7 +273,8 @@ Cross-reference planning
     - Keep the main component as a normal component, such as a contactor coil.
     - Keep contacts/secondary elements as normal components with `Parte de` pointing to the main component.
     - On the main component, allow `Mostrar partes` with position, rotation, spacing and scale.
-    - On the secondary component, allow `Mostrar link do principal` with link modes tag, address or tag + address.
+    - On the secondary component, `Mostrar link do principal` now always displays the parent address.
+    - The secondary component parent-link text has editable X/Y offset and rotation.
     - Use the actual secondary component drawing as the copied reference symbol near the main component.
   - Phase C: linked-part list.
     - For a selected/main component, show linked parts grouped by `partOfId`.
@@ -346,7 +353,8 @@ Cross-reference planning
   - Recommended user tests:
     - Create/select K1 as the main component.
     - Create/select one or more contacts and set `Parte de` to K1.
-    - On each contact, enable `Mostrar link do principal` and test tag/address/tag+address modes.
+    - On each contact, enable `Mostrar link do principal`; confirm it shows the parent address and that X/Y/rotation controls reposition the text.
+    - Save that contact as a project template, insert it again, set `Parte de`, and confirm the parent-link address X/Y/rotation defaults are preserved.
     - On K1, enable `Mostrar partes`.
     - Test positions below/right/above/left.
     - Change spacing, scale and rotation and confirm the copied contact references update.

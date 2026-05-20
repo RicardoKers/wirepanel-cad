@@ -601,6 +601,8 @@ export default function App() {
   const canGroupSelection = selection.length > 1;
   const canUngroupSelection = selection.length === 1 && selectedShape?.type === "group";
   const canMoveSelection = selection.length > 0;
+  const canAlignSelection = selection.length > 1;
+  const canTransformSelection = selection.length > 0;
   const canCreateComponentInstance =
     selection.length === 1 &&
     selectedShape?.type === "group" &&
@@ -1717,6 +1719,12 @@ export default function App() {
         typeof (value as ComponentInstance).showParentLink === "boolean") &&
       (typeof (value as ComponentInstance).parentLinkMode === "undefined" ||
         ["tag", "address", "tagAndAddress"].includes((value as ComponentInstance).parentLinkMode ?? "")) &&
+      (typeof (value as ComponentInstance).parentLinkOffsetX === "undefined" ||
+        typeof (value as ComponentInstance).parentLinkOffsetX === "number") &&
+      (typeof (value as ComponentInstance).parentLinkOffsetY === "undefined" ||
+        typeof (value as ComponentInstance).parentLinkOffsetY === "number") &&
+      (typeof (value as ComponentInstance).parentLinkRotation === "undefined" ||
+        typeof (value as ComponentInstance).parentLinkRotation === "number") &&
       typeof (value as ComponentInstance).pageId === "string" &&
       Array.isArray((value as ComponentInstance).shapeIds) &&
       (value as ComponentInstance).shapeIds.every((shapeId) => typeof shapeId === "string") &&
@@ -1851,7 +1859,11 @@ export default function App() {
       category: sourceInstance?.type,
       defaultTagPrefix: sourceInstance?.tagPrefix,
       defaultComponentType: sourceInstance?.type,
-      defaultLabel: sourceInstance?.label
+      defaultLabel: sourceInstance?.label,
+      defaultShowParentLink: sourceInstance?.showParentLink,
+      defaultParentLinkOffsetX: sourceInstance?.parentLinkOffsetX,
+      defaultParentLinkOffsetY: sourceInstance?.parentLinkOffsetY,
+      defaultParentLinkRotation: sourceInstance?.parentLinkRotation
     });
     setComponents((prev) => [...prev, component]);
     setComponentLibraryMessage(null);
@@ -2027,7 +2039,9 @@ export default function App() {
             ? getNextPartOrder(parentComponent.componentId, prev)
             : undefined,
           showParentLink: Boolean(parentComponent),
-          parentLinkMode: "tag",
+          parentLinkOffsetX: 6,
+          parentLinkOffsetY: -2,
+          parentLinkRotation: 0,
           partsDisplay: getDefaultPartsDisplay(),
           pageId: createComponentDialog.pageId,
           shapeIds: [createComponentDialog.shapeId],
@@ -2279,6 +2293,10 @@ export default function App() {
           tagNumber: getNextComponentTagNumberFrom(tagPrefix, prev),
           type: component.defaultComponentType?.trim() || component.name || t("app.componentDefaultType"),
           partsDisplay: getDefaultPartsDisplay(),
+          showParentLink: component.defaultShowParentLink,
+          parentLinkOffsetX: component.defaultParentLinkOffsetX,
+          parentLinkOffsetY: component.defaultParentLinkOffsetY,
+          parentLinkRotation: component.defaultParentLinkRotation,
           pageId: activePageId,
           shapeIds: newShapes.map((shape) => shape.id),
           label: getDefaultComponentLabel(component.defaultLabel)
@@ -2778,7 +2796,7 @@ export default function App() {
           onResizeSelection={handleResizeSelection}
           onResizeEnd={handleResizeEnd}
           onSelectionContextMenu={(x, y) => {
-            if (!canGroupSelection && !canCreateComponentInstance && !canUngroupSelection && !canMoveSelection) return;
+            if (!canGroupSelection && !canCreateComponentInstance && !canUngroupSelection && !canMoveSelection && !canTransformSelection) return;
             setSelectionMenu({ x, y });
           }}
           onCopySelection={handleCopySelection}
@@ -2805,11 +2823,6 @@ export default function App() {
           onUpdateShape={(id, updater) => updateShape(id, updater)}
           onUpdatePotentialShared={updatePotentialShared}
           onUpdatePotentialNumber={updatePotentialNumber}
-          onDeleteSelection={handleDeleteSelection}
-          onMoveSelection={moveSelection}
-          onAlignSelection={alignSelection}
-          onRotateSelection={rotateSelection}
-          onMirrorSelection={mirrorSelection}
           componentInstanceItems={componentInstanceItems}
           onNavigateToComponent={(pageId, bounds) => {
             setActivePageId(pageId);
@@ -2888,6 +2901,95 @@ export default function App() {
       )}
       {selectionMenu && (
         <div className="context-menu" style={{ top: selectionMenu.y, left: selectionMenu.x }}>
+          {canTransformSelection && (
+            <>
+              <div className="context-menu-label">{t("app.selectionActions")}</div>
+              <button
+                type="button"
+                className="context-menu-item danger"
+                onClick={() => {
+                  handleDeleteSelection();
+                  setSelectionMenu(null);
+                }}
+              >
+                {t("properties.delete")}
+              </button>
+              <div className="context-menu-separator" />
+              <div className="context-menu-label">{t("app.transformSelection")}</div>
+              <button
+                type="button"
+                className="context-menu-item"
+                onClick={() => {
+                  rotateSelection(-15);
+                  setSelectionMenu(null);
+                }}
+              >
+                {t("properties.rotateMinus15")}
+              </button>
+              <button
+                type="button"
+                className="context-menu-item"
+                onClick={() => {
+                  rotateSelection(15);
+                  setSelectionMenu(null);
+                }}
+              >
+                {t("properties.rotatePlus15")}
+              </button>
+              <button
+                type="button"
+                className="context-menu-item"
+                onClick={() => {
+                  mirrorSelection("horizontal");
+                  setSelectionMenu(null);
+                }}
+              >
+                {t("properties.mirrorHorizontal")}
+              </button>
+              <button
+                type="button"
+                className="context-menu-item"
+                onClick={() => {
+                  mirrorSelection("vertical");
+                  setSelectionMenu(null);
+                }}
+              >
+                {t("properties.mirrorVertical")}
+              </button>
+            </>
+          )}
+          {canAlignSelection && (
+            <>
+              <div className="context-menu-separator" />
+              <div className="context-menu-label">{t("app.alignSelection")}</div>
+              {([
+                ["left", "alignLeft"],
+                ["centerX", "alignCenterX"],
+                ["right", "alignRight"],
+                ["top", "alignTop"],
+                ["centerY", "alignCenterY"],
+                ["bottom", "alignBottom"]
+              ] as const).map(([mode, labelKey]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className="context-menu-item"
+                  onClick={() => {
+                    alignSelection(mode);
+                    setSelectionMenu(null);
+                  }}
+                >
+                  {t(`properties.${labelKey}`)}
+                </button>
+              ))}
+            </>
+          )}
+          {(canGroupSelection || canCreateComponentInstance || canUngroupSelection) && (
+            <>
+              <div className="context-menu-separator" />
+              <div className="context-menu-label">{t("app.structureSelection")}</div>
+            </>
+          )}
           {canGroupSelection && (
             <button
               type="button"

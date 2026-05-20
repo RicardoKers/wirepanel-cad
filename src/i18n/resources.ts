@@ -208,12 +208,9 @@ export const resources = {
         partsAddressOffsetY: "Address Y",
         partsAddressRotation: "Address rotation",
         showParentLink: "Show main link",
-        parentLinkMode: "Main link",
-        parentLinkModes: {
-          tag: "Tag",
-          address: "Address",
-          tagAndAddress: "Tag + address"
-        },
+        parentLinkOffsetX: "Main link X",
+        parentLinkOffsetY: "Main link Y",
+        parentLinkRotation: "Main link rotation",
         showLabel: "Show label",
         labelOffsetX: "Label X",
         labelOffsetY: "Label Y",
@@ -251,6 +248,10 @@ export const resources = {
         create: "Create",
         ungroup: "Ungroup",
         moveToLayer: "Move to layer",
+        selectionActions: "Selection",
+        transformSelection: "Transform",
+        alignSelection: "Align",
+        structureSelection: "Structure",
         exportFilename: "cad-export.pdf",
         newText: "Text",
         newPin: "Pin"
@@ -462,12 +463,9 @@ export const resources = {
         partsAddressOffsetY: "Endere\u00E7o Y",
         partsAddressRotation: "Rota\u00E7\u00E3o do endere\u00E7o",
         showParentLink: "Mostrar link do principal",
-        parentLinkMode: "Link do principal",
-        parentLinkModes: {
-          tag: "Tag",
-          address: "Endere\u00E7o",
-          tagAndAddress: "Tag + endere\u00E7o"
-        },
+        parentLinkOffsetX: "Link principal X",
+        parentLinkOffsetY: "Link principal Y",
+        parentLinkRotation: "Rota\u00E7\u00E3o do link principal",
         showLabel: "Mostrar etiqueta",
         labelOffsetX: "Etiqueta X",
         labelOffsetY: "Etiqueta Y",
@@ -505,6 +503,10 @@ export const resources = {
         create: "Criar",
         ungroup: "Desagrupar",
         moveToLayer: "Mover para camada",
+        selectionActions: "Sele\u00E7\u00E3o",
+        transformSelection: "Transformar",
+        alignSelection: "Alinhar",
+        structureSelection: "Estrutura",
         exportFilename: "cad-export.pdf",
         newText: "Texto",
         newPin: "Pino"

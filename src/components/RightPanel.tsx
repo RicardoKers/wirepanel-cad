@@ -17,11 +17,6 @@ type RightPanelProps = {
   onUpdateShape: (id: string, updater: (shape: Shape) => Shape) => void;
   onUpdatePotentialShared: (id: string, changes: PotentialSharedChanges) => void;
   onUpdatePotentialNumber: (id: string, nextNumber: number) => void;
-  onDeleteSelection: () => void;
-  onMoveSelection: (dx: number, dy: number) => void;
-  onAlignSelection: (mode: "left" | "right" | "top" | "bottom" | "centerX" | "centerY") => void;
-  onRotateSelection: (degrees: number) => void;
-  onMirrorSelection: (axis: "horizontal" | "vertical") => void;
   componentInstanceItems: ComponentInstanceListItem[];
   onNavigateToComponent: (pageId: string, bounds: Bounds) => void;
   potentialList: { number: number; name: string; diameter: number | null; pageId: string; bounds: Bounds }[];
@@ -134,11 +129,6 @@ export default function RightPanel({
   onUpdateShape,
   onUpdatePotentialShared,
   onUpdatePotentialNumber,
-  onDeleteSelection,
-  onMoveSelection,
-  onAlignSelection,
-  onRotateSelection,
-  onMirrorSelection,
   componentInstanceItems,
   onNavigateToComponent,
   potentialList,
@@ -196,11 +186,6 @@ export default function RightPanel({
             onUpdateShape={onUpdateShape}
             onUpdatePotentialShared={onUpdatePotentialShared}
             onUpdatePotentialNumber={onUpdatePotentialNumber}
-            onDeleteSelection={onDeleteSelection}
-            onMoveSelection={onMoveSelection}
-            onAlignSelection={onAlignSelection}
-            onRotateSelection={onRotateSelection}
-            onMirrorSelection={onMirrorSelection}
             activeLayer={activeLayer}
           />
         )}

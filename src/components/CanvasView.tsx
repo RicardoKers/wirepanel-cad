@@ -12,7 +12,7 @@ const defaultFill = "transparent";
 const minShapeSize = 0.5;
 const minArcAngle = 0.01;
 
-const viewClamp = { min: 0.2, max: 40 };
+const viewClamp = { min: 0.2, max: 80 };
 
 const emptyPoint: Point = { x: 0, y: 0 };
 const defaultLineStyle: LineStyle = "solid";
@@ -27,6 +27,7 @@ const potentialArrowLabelGap = 1;
 const potentialArrowLabelShift = 3;
 const pinConnectionTolerance = 0.8;
 const selectionProximityPx = 6;
+const selectionCyclePointPx = 8;
 const textSelectionProximityPx = 1;
 const textSelectionProximityMm = 0.6;
 const potentialJunctionRadius = 0.6;
@@ -123,6 +124,12 @@ type PointerLike = {
   clientX: number;
   clientY: number;
   pointerId?: number;
+};
+
+type ShapeHitCandidate = {
+  shape: Shape;
+  distance: number;
+  priority: number;
 };
 
 function getLineStyleProps(lineStyle?: LineStyle) {
@@ -261,6 +268,7 @@ export default function CanvasView({
   const dragPointRef = useRef<Point>(emptyPoint);
   const panStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const lastPointerRef = useRef<Point>(emptyPoint);
+  const selectionCycleRef = useRef<{ point: Point; candidateIds: string[]; index: number } | null>(null);
   const tagDragRef = useRef<{ id: string; last: Point } | null>(null);
   const lastFitToPageRequestRef = useRef(0);
   const endpointDragRef = useRef<{
@@ -424,43 +432,62 @@ export default function CanvasView({
     return distanceToBounds(point, getShapeBounds(shape));
   }
 
-  function findClosestShape(point: Point, includeText = false): Shape | null {
-    let closest: Shape | null = null;
-    let bestDistance = Infinity;
-    let bestTextShape: Shape | null = null;
-    let bestTextDistance = Infinity;
-    let bestNonTextShape: Shape | null = null;
-    let bestNonTextDistance = Infinity;
+  function getShapeHitPriority(shape: Shape) {
+    if (shape.type === "text") return 1;
+    if (shape.type === "group") return 3;
+    return 2;
+  }
+
+  function getShapeHitCandidates(point: Point, includeText = false): ShapeHitCandidate[] {
+    const threshold = selectionProximityPx / view.scale;
+    const textThreshold = Math.min(textSelectionProximityPx / view.scale, textSelectionProximityMm);
+    const candidates: ShapeHitCandidate[] = [];
+
     shapes.forEach((shape) => {
       if (!isShapeVisible(shape) || !isShapeSelectable(shape)) return;
       if (shape.type === "text" && !includeText) return;
       const dist = getShapeDistance(shape, point);
-      if (dist < bestDistance) {
-        bestDistance = dist;
-        closest = shape;
-      }
-      if (shape.type === "text") {
-        if (dist < bestTextDistance) {
-          bestTextDistance = dist;
-          bestTextShape = shape;
-        }
-      } else if (dist < bestNonTextDistance) {
-        bestNonTextDistance = dist;
-        bestNonTextShape = shape;
+      const allowedDistance = shape.type === "text" ? textThreshold : threshold;
+      if (dist <= allowedDistance) {
+        candidates.push({ shape, distance: dist, priority: getShapeHitPriority(shape) });
       }
     });
-    const threshold = Math.max(selectionProximityPx / view.scale, 2);
-    if (bestNonTextShape !== null && bestNonTextDistance <= threshold) {
-      return bestNonTextShape;
+
+    return candidates.sort((a, b) => {
+      if (a.priority !== b.priority) return b.priority - a.priority;
+      if (a.distance !== b.distance) return a.distance - b.distance;
+      return a.shape.id.localeCompare(b.shape.id);
+    });
+  }
+
+  function findClosestShape(point: Point, includeText = false): Shape | null {
+    return getShapeHitCandidates(point, includeText)[0]?.shape ?? null;
+  }
+
+  function findSelectionTarget(point: Point, includeText = false): Shape | null {
+    const candidates = getShapeHitCandidates(point, includeText);
+    if (candidates.length === 0) {
+      selectionCycleRef.current = null;
+      return null;
     }
-    if (bestTextShape !== null && includeText) {
-      const textThreshold = Math.min(textSelectionProximityPx / view.scale, textSelectionProximityMm);
-      if (bestTextDistance <= textThreshold) {
-        return bestTextShape;
-      }
+
+    const candidateIds = candidates.map((candidate) => candidate.shape.id);
+    const lastCycle = selectionCycleRef.current;
+    const cycleDistance = lastCycle ? distance(point, lastCycle.point) * view.scale : Infinity;
+    const sameCycle =
+      lastCycle !== null &&
+      cycleDistance <= selectionCyclePointPx &&
+      lastCycle.candidateIds.length === candidateIds.length &&
+      lastCycle.candidateIds.every((id, index) => id === candidateIds[index]);
+
+    if (sameCycle) {
+      const nextIndex = (lastCycle.index + 1) % candidates.length;
+      selectionCycleRef.current = { point, candidateIds, index: nextIndex };
+      return candidates[nextIndex].shape;
     }
-    if (!closest || bestDistance > threshold) return null;
-    return closest;
+
+    selectionCycleRef.current = { point, candidateIds, index: 0 };
+    return candidates[0].shape;
   }
 
   function applySelection(event: ReactPointerEvent<SVGElement>, target: Shape, world: Point) {
@@ -582,7 +609,7 @@ export default function CanvasView({
     }
 
     if (tool === "select") {
-      const nearestShape = findClosestShape(rawWorld);
+      const nearestShape = findSelectionTarget(rawWorld);
       if (nearestShape) {
         applySelection(event, nearestShape, world);
         return;
@@ -975,7 +1002,8 @@ export default function CanvasView({
     event.stopPropagation();
     const rawWorld = getWorldPoint(event);
     const world = snapPoint(rawWorld);
-    const target = force ? shape : findClosestShape(rawWorld) ?? shape;
+    const target = force ? shape : findSelectionTarget(rawWorld);
+    if (!target) return;
     applySelection(event, target, world);
   }
 
@@ -1324,13 +1352,8 @@ export default function CanvasView({
   function buildParentLinkText(instance: ComponentInstance) {
     if (!instance.partOfId) return "";
     const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
-    if (!parent) return instance.partOfTag ?? "";
-    const tag = `${parent.tagPrefix}${parent.tagNumber}`;
-    const address = getInstanceAddress(parent);
-    const mode = instance.parentLinkMode ?? "tag";
-    if (mode === "address") return address;
-    if (mode === "tagAndAddress") return address ? `${tag} ${address}` : tag;
-    return tag;
+    if (!parent) return "";
+    return getInstanceAddress(parent);
   }
 
   function handleComponentLinkPointerDown(
@@ -1353,16 +1376,22 @@ export default function CanvasView({
       const text = buildParentLinkText(instance);
       if (!text) return null;
       const bounds = linkedItem.bounds;
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerY = (bounds.minY + bounds.maxY) / 2;
+      const textX = centerX + (instance.parentLinkOffsetX ?? (bounds.maxX - centerX + 3));
+      const textY = centerY + (instance.parentLinkOffsetY ?? (bounds.minY - centerY - 2));
+      const textRotation = instance.parentLinkRotation ?? 0;
       const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
       const parentItem = parent ? getInstanceShapes(parent) : null;
       return (
         <text
           key={`parent-link-${instance.componentId}`}
           className="component-link-label"
-          x={bounds.maxX + 3}
-          y={bounds.minY - 2}
+          x={textX}
+          y={textY}
           fontSize={3.2}
           pointerEvents="all"
+          transform={textRotation ? `rotate(${textRotation} ${textX} ${textY})` : undefined}
           onPointerDown={(event) =>
             handleComponentLinkPointerDown(
               event,
@@ -1469,14 +1498,14 @@ export default function CanvasView({
     const isSelected = !suppressPointer && selection.includes(shape.id);
     const className = isSelected ? "shape selected" : "shape";
     const { strokeDasharray, strokeLinecap } = getLineStyleProps(shape.lineStyle);
-    const hitWidth = Math.max(8 / view.scale, shape.lineWidth + 3);
+    const hitWidth = Math.max((selectionProximityPx * 2) / view.scale, shape.lineWidth);
     if (shape.type === "group") {
       const bounds = getShapeBounds(shape);
       const visibleChildren = shape.children.filter((child) => isShapeVisible(child));
       const groupHitProps = suppressPointer
         ? { pointerEvents: "none" as const }
         : { onPointerDown: (event: ReactPointerEvent<SVGElement>) => handleShapePointerDown(event, shape) };
-      const groupHitPadding = Math.max(6 / view.scale, 3);
+      const groupHitPadding = selectionProximityPx / view.scale;
       const groupHitWidth = Math.max(1, bounds.maxX - bounds.minX);
       const groupHitHeight = Math.max(1, bounds.maxY - bounds.minY);
       return (

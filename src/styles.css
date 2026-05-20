@@ -922,12 +922,28 @@ body {
 .context-menu {
   position: fixed;
   z-index: 1000;
+  max-height: min(520px, calc(100vh - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   min-width: 160px;
   padding: 6px;
   background: #0f141b;
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.context-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.context-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.context-menu::-webkit-scrollbar-thumb {
+  background: #2a3744;
+  border-radius: 999px;
 }
 
 .context-menu-item {

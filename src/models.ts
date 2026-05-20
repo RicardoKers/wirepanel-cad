@@ -96,6 +96,10 @@ export type Component = {
   defaultTagPrefix?: string;
   defaultComponentType?: string;
   defaultLabel?: ComponentLabel;
+  defaultShowParentLink?: boolean;
+  defaultParentLinkOffsetX?: number;
+  defaultParentLinkOffsetY?: number;
+  defaultParentLinkRotation?: number;
 };
 
 export type ComponentSource = "app" | "project";
@@ -144,6 +148,9 @@ export type ComponentInstance = {
   partsDisplay?: ComponentPartsDisplay;
   showParentLink?: boolean;
   parentLinkMode?: ComponentParentLinkMode;
+  parentLinkOffsetX?: number;
+  parentLinkOffsetY?: number;
+  parentLinkRotation?: number;
   pageId: string;
   shapeIds: string[];
   label: ComponentLabel;

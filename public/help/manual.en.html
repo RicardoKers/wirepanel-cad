@@ -226,6 +226,11 @@
           Multi-selection can be done with a selection rectangle. Hold <code>Alt</code> while dragging
           to select only objects fully contained by the rectangle.
         </p>
+        <p>
+          Right-click a selection to access common CAD actions such as delete, rotate, mirror, align,
+          group, ungroup, create component and move to layer. Alignment uses the current selection as
+          the reference bounds.
+        </p>
       </section>
 
       <section class="section">
@@ -327,6 +332,7 @@
           <li>Spacing controls the distance between shown parts.</li>
           <li>Offset controls the distance from the main component to the first shown part.</li>
           <li>Address offset X/Y and address rotation position the reference text beside each shown part.</li>
+          <li>When a part shows the main component link, the text is always the main component address. Its X/Y position and rotation can be edited in Object properties.</li>
           <li>Parts are ordered by insertion order. To move a part to the end, remove <strong>Part of</strong> and add it again.</li>
           <li>Use <code>Ctrl</code> + click on component reference text to jump to the related component or part.</li>
         </ul>
@@ -362,6 +368,7 @@
           <li>Right-click a project model to insert, rename, download JSON or delete it.</li>
           <li>Models are grouped by component type. Groups can be collapsed to simplify navigation.</li>
           <li>Exported model JSON uses the component type internally; there is no separate category prompt.</li>
+          <li>Models saved from component parts keep their main-link address text position and rotation defaults.</li>
         </ul>
       </section>
 
@@ -416,6 +423,7 @@
         <h2>Practical Tips</h2>
         <ul>
           <li>Use clear component types because the Library navigation is grouped by type.</li>
+          <li>When several small objects overlap, click repeatedly in the same spot to cycle through selectable candidates.</li>
           <li>For reusable electrical symbols, create an intelligent component before saving it as a project model.</li>
           <li>Use project model JSON import/export to grow the library gradually.</li>
           <li>Use <strong>Part of</strong> to connect coils, main contacts and auxiliary contacts logically.</li>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ComponentInstance, Layer, Shape } from "../models";
 import { getShapeBounds, translateShape } from "../utils/geometry";
@@ -13,11 +13,6 @@ type PropertiesPanelProps = {
   onUpdateShape: (id: string, updater: (shape: Shape) => Shape) => void;
   onUpdatePotentialShared: (id: string, changes: PotentialSharedChanges) => void;
   onUpdatePotentialNumber: (id: string, nextNumber: number) => void;
-  onDeleteSelection: () => void;
-  onMoveSelection: (dx: number, dy: number) => void;
-  onAlignSelection: (mode: "left" | "right" | "top" | "bottom" | "centerX" | "centerY") => void;
-  onRotateSelection: (degrees: number) => void;
-  onMirrorSelection: (axis: "horizontal" | "vertical") => void;
   activeLayer: Layer | undefined;
 };
 
@@ -47,16 +42,9 @@ export default function PropertiesPanel({
   onUpdateShape,
   onUpdatePotentialShared,
   onUpdatePotentialNumber,
-  onDeleteSelection,
-  onMoveSelection,
-  onAlignSelection,
-  onRotateSelection,
-  onMirrorSelection,
   activeLayer
 }: PropertiesPanelProps) {
   const { t } = useTranslation();
-  const [moveX, setMoveX] = useState(0);
-  const [moveY, setMoveY] = useState(0);
   const lineStyle = selectedShape?.lineStyle ?? "solid";
   const groupOrigin = useMemo(() => {
     if (!selectedShape || selectedShape.type !== "group") return null;
@@ -117,51 +105,6 @@ export default function PropertiesPanel({
         <h3>{t("properties.title")}</h3>
       </header>
       <div className="panel-body properties-body">
-        <button className="tool-button danger" onClick={onDeleteSelection}>{t("properties.delete")}</button>
-        {selectionCount > 0 && (
-          <>
-            <div className="align-grid">
-              <button className="chip" onClick={() => onRotateSelection(-15)}>{t("properties.rotateMinus15")}</button>
-              <button className="chip" onClick={() => onRotateSelection(15)}>{t("properties.rotatePlus15")}</button>
-              <button className="chip" onClick={() => onMirrorSelection("horizontal")}>{t("properties.mirrorHorizontal")}</button>
-              <button className="chip" onClick={() => onMirrorSelection("vertical")}>{t("properties.mirrorVertical")}</button>
-            </div>
-            {selectionCount > 1 && (
-              <div className="align-grid">
-                <button className="chip" onClick={() => onAlignSelection("left")}>{t("properties.alignLeft")}</button>
-                <button className="chip" onClick={() => onAlignSelection("centerX")}>{t("properties.alignCenterX")}</button>
-                <button className="chip" onClick={() => onAlignSelection("right")}>{t("properties.alignRight")}</button>
-                <button className="chip" onClick={() => onAlignSelection("top")}>{t("properties.alignTop")}</button>
-                <button className="chip" onClick={() => onAlignSelection("centerY")}>{t("properties.alignCenterY")}</button>
-                <button className="chip" onClick={() => onAlignSelection("bottom")}>{t("properties.alignBottom")}</button>
-              </div>
-            )}
-            <div className="move-grid">
-              <label className="row">
-                {t("properties.moveX")}
-                <input
-                  type="number"
-                  value={moveX}
-                  onChange={(event) => setMoveX(Number(event.target.value) || 0)}
-                />
-              </label>
-              <label className="row">
-                {t("properties.moveY")}
-                <input
-                  type="number"
-                  value={moveY}
-                  onChange={(event) => setMoveY(Number(event.target.value) || 0)}
-                />
-              </label>
-              <button
-                className="tool-button"
-                onClick={() => onMoveSelection(moveX, moveY)}
-              >
-                {t("properties.applyMove")}
-              </button>
-            </div>
-          </>
-        )}
         {selectedComponentInstance && (
           <section className="property-section">
             <h4>{t("properties.componentSection")}: {selectedComponentTag}</h4>
@@ -406,28 +349,58 @@ export default function PropertiesPanel({
                       updateSelectedComponent((instance) => ({
                         ...instance,
                         showParentLink: event.target.checked,
-                        parentLinkMode: instance.parentLinkMode ?? "tag"
+                        parentLinkOffsetX: instance.parentLinkOffsetX ?? 6,
+                        parentLinkOffsetY: instance.parentLinkOffsetY ?? -2,
+                        parentLinkRotation: instance.parentLinkRotation ?? 0
                       }))
                     }
                   />
                 </label>
                 {selectedComponentInstance.showParentLink && (
-                  <label className="row">
-                    {t("properties.parentLinkMode")}
-                    <select
-                      value={selectedComponentInstance.parentLinkMode ?? "tag"}
-                      onChange={(event) =>
-                        updateSelectedComponent((instance) => ({
-                          ...instance,
-                          parentLinkMode: event.target.value as ComponentInstance["parentLinkMode"]
-                        }))
-                      }
-                    >
-                      <option value="tag">{t("properties.parentLinkModes.tag")}</option>
-                      <option value="address">{t("properties.parentLinkModes.address")}</option>
-                      <option value="tagAndAddress">{t("properties.parentLinkModes.tagAndAddress")}</option>
-                    </select>
-                  </label>
+                  <>
+                    <label className="row">
+                      {t("properties.parentLinkOffsetX")}
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={selectedComponentInstance.parentLinkOffsetX ?? 6}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            parentLinkOffsetX: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.parentLinkOffsetY")}
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={selectedComponentInstance.parentLinkOffsetY ?? -2}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            parentLinkOffsetY: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.parentLinkRotation")}
+                      <input
+                        type="number"
+                        step={15}
+                        value={selectedComponentInstance.parentLinkRotation ?? 0}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            parentLinkRotation: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                  </>
                 )}
               </>
             )}
