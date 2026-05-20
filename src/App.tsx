@@ -23,6 +23,7 @@ import {
   buildComponentPlacementKey,
   createComponentDefinition,
   instantiateComponent,
+  isAppLibraryComponentFile,
   isComponentValue,
   isShapeValue,
   parseComponentPlacementKey,
@@ -154,7 +155,7 @@ export default function App() {
   const [placingComponentId, setPlacingComponentId] = useState<string | null>(null);
   const [fitToPageRequest, setFitToPageRequest] = useState(0);
   const [pdfSettings, setPdfSettings] = useState<PdfSettings>(initialPdfSettings);
-  const [componentExportStatus, setComponentExportStatus] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const [componentLibraryMessage, setComponentLibraryMessage] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
   const [pageMenu, setPageMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [createComponentDialog, setCreateComponentDialog] = useState<{
@@ -1769,7 +1770,7 @@ export default function App() {
         setActivePageId(data.pages[0]?.id ?? "");
         setSelectionByPage({});
         setViewByPage({});
-        setComponentExportStatus(null);
+        setComponentLibraryMessage(null);
       } catch {
         // ignore invalid file
       }
@@ -1847,12 +1848,59 @@ export default function App() {
       id: createId("component"),
       name: t("components.defaultName", { number: components.length + 1 }),
       gridSize,
+      category: sourceInstance?.type,
       defaultTagPrefix: sourceInstance?.tagPrefix,
       defaultComponentType: sourceInstance?.type,
       defaultLabel: sourceInstance?.label
     });
     setComponents((prev) => [...prev, component]);
-    setComponentExportStatus(null);
+    setComponentLibraryMessage(null);
+  }
+
+  function getUniqueProjectComponentId(baseId: string, existingComponents: Component[]) {
+    const fallbackId = slugifyComponentName(baseId);
+    const usedIds = new Set(existingComponents.map((component) => component.id));
+    if (!usedIds.has(fallbackId)) return fallbackId;
+
+    let index = 2;
+    while (usedIds.has(`${fallbackId}-${index}`)) {
+      index += 1;
+    }
+    return `${fallbackId}-${index}`;
+  }
+
+  async function handleImportComponent(file: File) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as unknown;
+
+      if (!isAppLibraryComponentFile(data)) {
+        setComponentLibraryMessage({ kind: "error", message: t("components.importFailed") });
+        return;
+      }
+
+      const importedComponent = data.component;
+      setComponents((prev) => {
+        const id = getUniqueProjectComponentId(importedComponent.id || importedComponent.name || file.name, prev);
+        const componentType = importedComponent.defaultComponentType?.trim() || importedComponent.category.trim();
+
+        return [
+          ...prev,
+          {
+            ...importedComponent,
+            id,
+            name: importedComponent.name.trim() || id,
+            category: componentType
+          }
+        ];
+      });
+      setComponentLibraryMessage({
+        kind: "success",
+        message: t("components.importSuccess", { fileName: file.name })
+      });
+    } catch {
+      setComponentLibraryMessage({ kind: "error", message: t("components.importFailed") });
+    }
   }
 
   function handleRenameComponent(id: string, name: string) {
@@ -1862,7 +1910,7 @@ export default function App() {
   function handleDeleteComponent(id: string) {
     setComponents((prev) => prev.filter((component) => component.id !== id));
     if (placingComponentId === buildComponentPlacementKey("project", id)) setPlacingComponentId(null);
-    setComponentExportStatus(null);
+    setComponentLibraryMessage(null);
   }
 
   function removeComponentInstancesForShapeIds(shapeIds: string[]) {
@@ -2014,14 +2062,13 @@ export default function App() {
     if (fileNameInput === null) return;
 
     const fileName = slugifyComponentName(fileNameInput);
-    const categoryInput = window.prompt(t("components.exportCategoryPrompt"), component.category);
-    if (categoryInput === null) return;
+    const componentType = component.defaultComponentType?.trim() || component.category.trim();
 
     const file = buildAppLibraryComponentFile({
       ...component,
       id: fileName,
       name: component.name.trim() || fileName,
-      category: categoryInput.trim()
+      category: componentType
     });
 
     try {
@@ -2033,13 +2080,13 @@ export default function App() {
       link.download = `${fileName}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      setComponentExportStatus({
+      setComponentLibraryMessage({
         kind: "success",
         message: t("components.exportSuccess", { fileName: `${fileName}.json` })
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : t("components.exportFailed");
-      setComponentExportStatus({ kind: "error", message });
+      setComponentLibraryMessage({ kind: "error", message });
     }
   }
 
@@ -2663,6 +2710,19 @@ export default function App() {
         onSaveJson={handleSaveJson}
         onLoadJson={handleLoadJson}
         onExportPdf={handleExportPdf}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onCopySelection={handleCopySelection}
+        onCutSelection={handleCutSelection}
+        onPasteSelection={handlePasteSelection}
+        onDeleteSelection={handleDeleteSelection}
+        onGroupSelection={handleGroupSelection}
+        onUngroupSelection={handleUngroupSelection}
+        onCreateComponent={openCreateComponentDialog}
+        canEditSelection={selection.length > 0}
+        canGroupSelection={canGroupSelection}
+        canUngroupSelection={canUngroupSelection}
+        canCreateComponent={canCreateComponentInstance}
       />
       <div className="workspace">
         <aside className="sidebar">
@@ -2670,13 +2730,13 @@ export default function App() {
             appComponents={builtInComponents}
             projectComponents={components}
             onSaveComponent={handleSaveComponent}
+            onImportComponent={handleImportComponent}
             onSelectComponent={setPlacingComponentId}
             onDeleteComponent={handleDeleteComponent}
             onRenameComponent={handleRenameComponent}
             onExportComponent={handleExportComponent}
             placingComponentId={placingComponentId}
             showPinConnection={showPinConnection}
-            exportStatus={componentExportStatus}
           />
         </aside>
         <CanvasView
@@ -2810,7 +2870,7 @@ export default function App() {
         </button>
       </div>
       <div className="author-signature" aria-hidden="true">
-        Kerschbaumer – IFC Luzerna
+        Kerschbaumer – IFC Luzerna - V. 0.1
       </div>
       {pageMenu && (
         <div className="context-menu" style={{ top: pageMenu.y, left: pageMenu.x }}>
@@ -2967,6 +3027,39 @@ export default function App() {
               </button>
             </footer>
           </form>
+        </div>
+      )}
+      {componentLibraryMessage && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setComponentLibraryMessage(null)}>
+          <section
+            className="modal-panel message-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="component-library-message-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="modal-header">
+              <h3 id="component-library-message-title">
+                {componentLibraryMessage.kind === "error" ? t("components.messageErrorTitle") : t("components.messageSuccessTitle")}
+              </h3>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => setComponentLibraryMessage(null)}
+                aria-label={t("app.ok")}
+              >
+                ×
+              </button>
+            </header>
+            <div className="modal-body">
+              <p className="modal-message-text">{componentLibraryMessage.message}</p>
+            </div>
+            <footer className="modal-actions">
+              <button type="button" className="tool-button primary" autoFocus onClick={() => setComponentLibraryMessage(null)}>
+                {t("app.ok")}
+              </button>
+            </footer>
+          </section>
         </div>
       )}
     </div>

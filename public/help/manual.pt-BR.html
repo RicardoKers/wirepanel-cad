@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Manual do CAD 2D</title>
+    <title>Manual do Wirepanel CAD</title>
     <style>
       :root {
         color-scheme: dark;
@@ -84,7 +84,8 @@
       }
 
       p,
-      li {
+      li,
+      td {
         color: var(--muted);
       }
 
@@ -154,138 +155,127 @@
 
       th {
         background: rgba(24, 36, 51, 0.9);
+        color: var(--text);
       }
     </style>
   </head>
   <body>
     <main class="layout">
       <section class="hero">
-        <h1>Manual do CAD 2D para Projetos Elétricos</h1>
+        <h1>Manual do Wirepanel CAD</h1>
         <p>
-          Este manual reúne o fluxo principal da aplicação, as ferramentas de desenho, edição,
-          potenciais, componentes, exportação de projeto e geração de PDF.
+          O Wirepanel CAD &eacute; uma ferramenta CAD 2D no navegador para desenhos el&eacute;tricos
+          industriais. Este manual cobre ferramentas de desenho, potenciais, modelos reutiliz&aacute;veis,
+          componentes inteligentes, partes vinculadas, arquivos de projeto e exporta&ccedil;&atilde;o em PDF.
         </p>
         <div class="top-links">
           <a href="./manual.en.html">English Manual</a>
-          <a href="#atalhos">Atalhos</a>
+          <a href="#interface">Interface</a>
           <a href="#componentes">Componentes</a>
-          <a href="#textos">Textos e Links</a>
+          <a href="#biblioteca">Biblioteca</a>
+          <a href="#atalhos">Atalhos</a>
         </div>
       </section>
 
-      <section class="section">
-        <h2>Visão geral da interface</h2>
+      <section class="section" id="interface">
+        <h2>Vis&atilde;o Geral da Interface</h2>
         <div class="grid">
           <div class="card">
-            <h3>Barra superior</h3>
-            <p>Contém as ferramentas de desenho e as ações globais do projeto.</p>
-            <ul>
-              <li><strong>Select</strong>: selecionar, mover, redimensionar e editar objetos.</li>
-              <li><strong>Line</strong>: desenhar linhas comuns.</li>
-              <li><strong>Potential</strong>: desenhar potenciais elétricos.</li>
-              <li><strong>Circle</strong> e <strong>Arc</strong>: desenhar geometrias circulares.</li>
-              <li><strong>Text</strong>: inserir textos livres ou especiais.</li>
-              <li><strong>Pin</strong>: inserir pinos de conexão.</li>
-              <li><strong>Pan</strong>: navegar pelo canvas sem editar.</li>
-              <li><strong>Ajustar a página</strong>: enquadrar a folha no zoom atual.</li>
-              <li><strong>Baixar Projeto</strong> e <strong>Carregar Projeto</strong>: salvar e abrir arquivos JSON do projeto.</li>
-              <li><strong>Ajuda</strong>: abrir este manual.</li>
-              <li><strong>Exportar PDF</strong>: gerar um PDF com as folhas do desenho.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Canvas central</h3>
+            <h3>Barra Superior</h3>
             <p>
-              É a área de desenho. A folha aparece dentro de uma área maior, permitindo zoom,
-              pan, seleção por clique e arraste, além de posicionamento com snap.
+              A barra usa bot&otilde;es compactos com &iacute;cones. Passe o mouse sobre um bot&atilde;o
+              para ver o nome da ferramenta. Ela cont&eacute;m ferramentas de desenho, visualiza&ccedil;&atilde;o,
+              JSON do projeto, ajuda e exporta&ccedil;&atilde;o PDF.
             </p>
           </div>
           <div class="card">
-            <h3>Painel esquerdo</h3>
+            <h3>Canvas Central</h3>
             <p>
-              Exibe os componentes disponíveis, separados entre <strong>Biblioteca do App</strong>
-              e <strong>Componentes do Projeto</strong>.
+              O canvas cont&eacute;m a folha, grade, moldura, marcadores, formas e componentes. &Eacute;
+              poss&iacute;vel aplicar zoom, pan, selecionar por clique, selecionar por ret&acirc;ngulo e
+              inserir componentes.
             </p>
           </div>
           <div class="card">
-            <h3>Painel direito</h3>
-            <p>Reúne as abas <strong>Propriedades</strong>, <strong>Potenciais</strong>, <strong>Camadas</strong> e <strong>Configurações</strong>.</p>
+            <h3>Biblioteca Esquerda</h3>
+            <p>
+              A Biblioteca mostra modelos reutiliz&aacute;veis do app e do projeto atual. Os modelos s&atilde;o
+              agrupados por tipo de componente e cada grupo pode ser recolhido.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Inspetor Direito</h3>
+            <p>
+              O painel direito cont&eacute;m Objeto, Componentes, Potenciais, Camadas e Projeto. A se&ccedil;&atilde;o
+              Objeto &eacute; organizada em blocos de Componente, Etiqueta e Geometria.
+            </p>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h2>Desenho e edição básica</h2>
-        <ol>
-          <li>Escolha uma ferramenta na barra superior.</li>
-          <li>Clique no canvas para iniciar o objeto.</li>
-          <li>Use o segundo clique para concluir linhas, potenciais e arcos.</li>
-          <li>Volte para <strong>Select</strong> para mover, editar ou selecionar múltiplos objetos.</li>
-        </ol>
+        <h2>Desenho e Edi&ccedil;&atilde;o</h2>
+        <ul>
+          <li><strong>Select</strong>: selecionar, mover, redimensionar e editar objetos.</li>
+          <li><strong>Line</strong>: desenhar linhas comuns.</li>
+          <li><strong>Potential</strong>: desenhar potenciais el&eacute;tricos com l&oacute;gica de conex&atilde;o.</li>
+          <li><strong>Circle</strong> e <strong>Arc</strong>: desenhar geometrias circulares.</li>
+          <li><strong>Text</strong>: inserir texto comum, especial ou com link.</li>
+          <li><strong>Pin</strong>: inserir pinos de conex&atilde;o.</li>
+          <li><strong>Pan</strong>: navegar pelo canvas sem editar a geometria.</li>
+        </ul>
         <p>
-          A seleção múltipla pode ser feita por caixa de seleção. Ao segurar <code>Alt</code>, a seleção
-          passa a usar contenção em vez de simples interseção.
+          A sele&ccedil;&atilde;o m&uacute;ltipla pode ser feita por ret&acirc;ngulo. Segure <code>Alt</code> ao arrastar
+          para selecionar apenas objetos totalmente contidos no ret&acirc;ngulo.
         </p>
       </section>
 
       <section class="section">
         <h2>Camadas</h2>
-        <p>
-          A aba <strong>Camadas</strong> permite organizar o desenho em diferentes níveis lógicos.
-        </p>
+        <p>A se&ccedil;&atilde;o Camadas organiza o desenho em n&iacute;veis l&oacute;gicos.</p>
         <ul>
-          <li>Criar novas camadas.</li>
-          <li>Renomear camadas existentes.</li>
-          <li>Mostrar ou ocultar uma camada.</li>
-          <li>Travar uma camada para impedir edição.</li>
-          <li>Definir a camada ativa para novos elementos.</li>
-          <li>Excluir camadas adicionais quando não forem mais necessárias.</li>
+          <li>Criar, renomear, mostrar, ocultar, travar e excluir camadas.</li>
+          <li>Escolher a camada ativa para novos objetos.</li>
+          <li>Mover objetos selecionados para outra camada pelo menu de contexto da sele&ccedil;&atilde;o.</li>
         </ul>
-        <p>
-          Objetos selecionados também podem ser movidos entre camadas pelo menu de contexto da seleção.
-        </p>
       </section>
 
       <section class="section">
         <h2>Potenciais</h2>
         <p>
-          Potenciais são linhas especiais para representar conexões elétricas. Cada potencial possui
-          número, nome e bitola em <code>mm²</code>.
+          Potenciais s&atilde;o linhas de conex&atilde;o el&eacute;trica. Cada potencial possui n&uacute;mero, nome e
+          bitola em <code>mm2</code>. As etiquetas e setas das pontas aparecem no canvas e tamb&eacute;m no PDF.
         </p>
         <ul>
-          <li>Ao desenhar, o potencial pode se conectar automaticamente a pinos e a outros potenciais.</li>
-          <li>Se a ponta encostar em outro potencial com o mesmo número, a conexão é criada.</li>
-          <li>Isso vale tanto durante o desenho quanto ao arrastar uma linha ou uma de suas pontas.</li>
-          <li>A aba <strong>Potenciais</strong> lista os potenciais da folha atual e permite <strong>Renumerar</strong>.</li>
+          <li>As pontas dos potenciais podem se conectar a pinos e a outros potenciais.</li>
+          <li>As conex&otilde;es podem ser criadas ao desenhar ou ao mover uma ponta existente.</li>
+          <li>A se&ccedil;&atilde;o Potenciais lista os potenciais da folha atual e permite renumerar.</li>
+          <li>Etiquetas nas pontas dos potenciais podem funcionar como links com <code>Ctrl</code> + clique.</li>
         </ul>
       </section>
 
       <section class="section" id="textos">
-        <h2>Textos, links e textos especiais</h2>
+        <h2>Textos e Links</h2>
         <div class="grid">
           <div class="card">
-            <h3>Texto normal</h3>
+            <h3>Texto Comum</h3>
+            <p>O texto pode ser editado nas propriedades do Objeto, incluindo conte&uacute;do, posi&ccedil;&atilde;o e tamanho.</p>
+          </div>
+          <div class="card">
+            <h3>Texto com Link</h3>
             <p>
-              Um texto comum pode ter conteúdo livre, tamanho de fonte e posição ajustada no painel
-              de propriedades.
+              Ative a propriedade Link e defina o destino. Use <code>Ctrl</code> + clique para navegar
+              at&eacute; a regi&atilde;o vinculada.
             </p>
           </div>
           <div class="card">
-            <h3>Texto com link</h3>
-            <p>
-              Ative a propriedade <strong>Link</strong> e preencha <strong>Destino</strong>. A navegação
-              acontece com <strong>Ctrl + clique</strong> no Windows/Linux ou <strong>Cmd + clique</strong>
-              no macOS.
-            </p>
-          </div>
-          <div class="card">
-            <h3>Textos especiais</h3>
-            <p>Os placeholders abaixo são substituídos automaticamente na tela e no PDF:</p>
+            <h3>Textos Especiais</h3>
+            <p>Os placeholders abaixo s&atilde;o substitu&iacute;dos na tela e na exporta&ccedil;&atilde;o PDF:</p>
             <ul>
               <li><code>&lt;project&gt;</code>: nome do projeto</li>
               <li><code>&lt;drawing&gt;</code>: nome do desenho</li>
               <li><code>&lt;author&gt;</code>: autor</li>
-              <li><code>&lt;page&gt;</code>: número da folha atual</li>
+              <li><code>&lt;page&gt;</code>: n&uacute;mero da folha atual</li>
               <li><code>&lt;n_pages&gt;</code>: total de folhas</li>
             </ul>
           </div>
@@ -293,110 +283,144 @@
       </section>
 
       <section class="section" id="componentes">
-        <h2>Componentes</h2>
+        <h2>Componentes Inteligentes</h2>
         <p>
-          A aplicação trabalha com dois tipos de componentes.
+          Um componente &eacute; um elemento l&oacute;gico do projeto vinculado a uma ou mais formas do desenho.
+          Ele possui um <code>componentId</code> invis&iacute;vel, prefixo de tag edit&aacute;vel, n&uacute;mero sequencial
+          e uma etiqueta vis&iacute;vel vinculada ao componente.
         </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Criar um Componente</h3>
+            <ol>
+              <li>Desenhe o s&iacute;mbolo e agrupe suas formas.</li>
+              <li>Clique com o bot&atilde;o direito no grupo e escolha <strong>Criar componente</strong>.</li>
+              <li>Defina o prefixo da tag, por exemplo <code>K</code>.</li>
+              <li>Defina o tipo do componente, por exemplo <code>Contator</code>.</li>
+              <li>Opcionalmente escolha outro componente em <strong>Parte de</strong>.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Tags e Etiquetas</h3>
+            <p>
+              A tag &eacute; armazenada como prefixo mais n&uacute;mero, como <code>K1</code> ou <code>K2</code>.
+              A etiqueta vis&iacute;vel n&atilde;o &eacute; um texto solto; ela &eacute; vinculada ao componente e pode
+              ser movida, alinhada, redimensionada, ocultada ou rotacionada nas propriedades.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Copiar e Colar</h3>
+            <p>
+              Copiar um componente cria uma nova inst&acirc;ncia com as mesmas caracter&iacute;sticas e o
+              pr&oacute;ximo n&uacute;mero sequencial. A rela&ccedil;&atilde;o <strong>Parte de</strong> &eacute; limpa ao copiar.
+            </p>
+          </div>
+        </div>
+
+        <h3>Partes e Refer&ecirc;ncias Cruzadas</h3>
+        <p>
+          Um componente secund&aacute;rio, como um contato auxiliar, pode ser definido como <strong>Parte de</strong>
+          um componente principal, como uma bobina. As partes herdam a tag e o n&uacute;mero do principal,
+          comportando-se como um &uacute;nico dispositivo l&oacute;gico.
+        </p>
+        <ul>
+          <li>O componente principal pode mostrar suas partes acima, abaixo, &agrave; esquerda ou &agrave; direita.</li>
+          <li>O espa&ccedil;amento controla a dist&acirc;ncia entre as partes mostradas.</li>
+          <li>O offset controla a dist&acirc;ncia entre o componente principal e a primeira parte mostrada.</li>
+          <li>Offset X/Y e rota&ccedil;&atilde;o do endere&ccedil;o posicionam o texto de refer&ecirc;ncia ao lado de cada parte.</li>
+          <li>As partes seguem a ordem de inser&ccedil;&atilde;o. Para mandar uma parte ao final, remova <strong>Parte de</strong> e adicione novamente.</li>
+          <li>Use <code>Ctrl</code> + clique nos textos de refer&ecirc;ncia para navegar at&eacute; o componente ou parte relacionada.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="biblioteca">
+        <h2>Biblioteca e Modelos Reutiliz&aacute;veis</h2>
         <table>
           <thead>
             <tr>
-              <th>Tipo</th>
-              <th>Uso</th>
+              <th>&Aacute;rea</th>
+              <th>Finalidade</th>
               <th>Onde fica salvo</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Biblioteca do App</td>
-              <td>Componentes nativos distribuídos com a aplicação.</td>
+              <td>Modelos do App</td>
+              <td>Modelos reutiliz&aacute;veis nativos, inclu&iacute;dos com a aplica&ccedil;&atilde;o.</td>
               <td>Arquivos JSON em <code>src/library/components</code> antes do build.</td>
             </tr>
             <tr>
-              <td>Componentes do Projeto</td>
-              <td>Componentes criados dentro do desenho atual.</td>
-              <td>No JSON do próprio projeto.</td>
+              <td>Modelos do Projeto</td>
+              <td>Modelos reutiliz&aacute;veis dispon&iacute;veis apenas no projeto atual.</td>
+              <td>Dentro do JSON do projeto.</td>
             </tr>
           </tbody>
         </table>
+        <ul>
+          <li>Use o bot&atilde;o <strong>+</strong> no cabe&ccedil;alho da Biblioteca para salvar a sele&ccedil;&atilde;o como modelo do projeto.</li>
+          <li>Use o bot&atilde;o de importar ao lado do <strong>+</strong> para importar um JSON de modelo para a biblioteca do projeto.</li>
+          <li>Clique ou arraste um modelo para inseri-lo no canvas.</li>
+          <li>Clique com o bot&atilde;o direito em um modelo do projeto para inserir, renomear, baixar JSON ou excluir.</li>
+          <li>Os modelos s&atilde;o agrupados por tipo de componente. Os grupos podem ser recolhidos para facilitar a navega&ccedil;&atilde;o.</li>
+          <li>O JSON exportado usa internamente o tipo do componente; n&atilde;o existe mais pergunta separada de categoria.</li>
+        </ul>
+      </section>
 
-        <h3>Criar um componente do projeto</h3>
-        <ol>
-          <li>Desenhe os elementos no canvas.</li>
-          <li>Selecione os objetos desejados.</li>
-          <li>Clique em <strong>Salvar no Projeto</strong>.</li>
-        </ol>
-
-        <h3>Inserir um componente</h3>
+      <section class="section">
+        <h2>Arquivos de Projeto e PDF</h2>
+        <ul>
+          <li><strong>Baixar Projeto</strong>: salva folhas, camadas, formas, modelos do projeto e inst&acirc;ncias de componentes em JSON.</li>
+          <li><strong>Carregar Projeto</strong>: abre um JSON no formato atual da aplica&ccedil;&atilde;o.</li>
+          <li><strong>Exportar PDF</strong>: exporta o desenho usando as configura&ccedil;&otilde;es do Projeto, incluindo etiquetas vis&iacute;veis e refer&ecirc;ncias de partes.</li>
+        </ul>
         <p>
-          Clique no componente e depois clique no canvas, ou arraste o componente até a posição desejada.
-          O posicionamento respeita a grade e os offsets internos do símbolo.
-        </p>
-
-        <h3>Gerar JSON para a biblioteca do app</h3>
-        <ol>
-          <li>Salve o símbolo como componente do projeto.</li>
-          <li>Clique em <strong>Baixar JSON</strong>.</li>
-          <li>Escolha um nome de arquivo e uma categoria.</li>
-          <li>O navegador fará o download do arquivo JSON.</li>
-          <li>Depois, copie o arquivo para <code>src/library/components</code> no repositório.</li>
-          <li>Recompile a aplicação para incluir esse componente na biblioteca nativa.</li>
-        </ol>
-        <p>
-          As categorias da biblioteca do app podem ser recolhidas ou expandidas para facilitar a busca.
+          O formato atual do projeto &eacute; estrito. Arquivos antigos ou parciais fora da estrutura atual
+          s&atilde;o rejeitados.
         </p>
       </section>
 
       <section class="section">
-        <h2>Salvar, carregar e exportar</h2>
+        <h2>Configura&ccedil;&otilde;es do Projeto</h2>
         <ul>
-          <li><strong>Baixar Projeto</strong>: gera um arquivo JSON com folhas, camadas e componentes do projeto.</li>
-          <li><strong>Carregar Projeto</strong>: abre um arquivo JSON no formato atual do aplicativo.</li>
-          <li><strong>Exportar PDF</strong>: gera o documento final usando as configurações da aba <strong>Configurações</strong>.</li>
+          <li><strong>Idioma</strong>: alterna entre portugu&ecirc;s do Brasil e ingl&ecirc;s.</li>
+          <li><strong>PDF</strong>: nome do projeto, desenho, autor, folha, orienta&ccedil;&atilde;o e margens.</li>
+          <li><strong>Grade</strong>: habilitar snap e definir tamanho e cor da grade.</li>
+          <li><strong>Pinos</strong>: mostrar ou ocultar o marcador X de conex&atilde;o.</li>
         </ul>
-        <p>
-          O formato atual do projeto é estrito. Arquivos antigos ou parciais fora do schema atual não são aceitos.
-        </p>
-      </section>
-
-      <section class="section">
-        <h2>Configurações</h2>
-        <ul>
-          <li><strong>Idioma</strong>: alterna entre português do Brasil e inglês.</li>
-          <li><strong>PDF</strong>: nome do projeto, desenho, autor, folha, orientação e margens.</li>
-          <li><strong>Grade</strong>: habilitar snap, definir tamanho e cor.</li>
-          <li><strong>Pinos</strong>: mostrar ou ocultar o X de conexão.</li>
-        </ul>
+        <p>A assinatura no canto inferior direito mostra <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>
 
       <section class="section" id="atalhos">
-        <h2>Atalhos de teclado</h2>
+        <h2>Atalhos de Teclado</h2>
         <table>
           <thead>
             <tr>
               <th>Atalho</th>
-              <th>Ação</th>
+              <th>A&ccedil;&atilde;o</th>
             </tr>
           </thead>
           <tbody>
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Desfazer</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td><td>Refazer</td></tr>
-            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td><td>Copiar seleção</td></tr>
-            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Recortar seleção</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">C</span></td><td>Copiar sele&ccedil;&atilde;o</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Recortar sele&ccedil;&atilde;o</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td><td>Colar</td></tr>
-            <tr><td><span class="kbd">Delete</span> ou <span class="kbd">Backspace</span></td><td>Excluir seleção</td></tr>
-            <tr><td><span class="kbd">Esc</span></td><td>Cancelar ação atual ou sair do modo de inserção</td></tr>
-            <tr><td>Setas do teclado</td><td>Mover a seleção pelo passo da grade ou por 1 unidade</td></tr>
+            <tr><td><span class="kbd">Delete</span> ou <span class="kbd">Backspace</span></td><td>Excluir sele&ccedil;&atilde;o</td></tr>
+            <tr><td><span class="kbd">Esc</span></td><td>Cancelar a a&ccedil;&atilde;o atual ou sair do modo de inser&ccedil;&atilde;o</td></tr>
+            <tr><td>Setas do teclado</td><td>Mover a sele&ccedil;&atilde;o pelo passo da grade ou por 1 unidade</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + clique</td><td>Abrir links de texto, potencial ou refer&ecirc;ncia de componente</td></tr>
           </tbody>
         </table>
       </section>
 
       <section class="section">
-        <h2>Dicas práticas</h2>
+        <h2>Dicas Pr&aacute;ticas</h2>
         <ul>
-          <li>Use <strong>Ajustar a página</strong> depois de um zoom intenso para voltar rapidamente ao enquadramento da folha.</li>
-          <li>Defina bem as camadas antes de começar bibliotecas grandes de componentes.</li>
-          <li>Para símbolos reutilizáveis, prefira criar como componente do projeto e depois baixar o JSON para a biblioteca do app.</li>
-          <li>Para carimbos e legendas, combine textos normais com placeholders especiais.</li>
+          <li>Use tipos de componente claros, pois a navega&ccedil;&atilde;o da Biblioteca &eacute; agrupada por tipo.</li>
+          <li>Para s&iacute;mbolos el&eacute;tricos reutiliz&aacute;veis, crie um componente inteligente antes de salvar como modelo do projeto.</li>
+          <li>Use importa&ccedil;&atilde;o e exporta&ccedil;&atilde;o de JSON de modelos para expandir a biblioteca gradualmente.</li>
+          <li>Use <strong>Parte de</strong> para conectar bobinas, contatos principais e contatos auxiliares logicamente.</li>
+          <li>Confira o PDF depois de ajustar etiquetas rotacionadas ou refer&ecirc;ncias de partes.</li>
         </ul>
       </section>
     </main>

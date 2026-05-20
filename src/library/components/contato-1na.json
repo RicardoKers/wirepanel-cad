@@ -1,0 +1,89 @@
+{
+  "schema": "wirepanel-cad.app-library-component",
+  "version": 1,
+  "component": {
+    "id": "contato-1na",
+    "name": "Contato 1NA",
+    "category": "Contato",
+    "description": "",
+    "tags": [],
+    "shapes": [
+      {
+        "id": "shape_1",
+        "type": "group",
+        "layerId": "layer-1",
+        "lineColor": "#000000",
+        "lineWidth": 1,
+        "fill": "transparent",
+        "children": [
+          {
+            "id": "shape_2",
+            "type": "line",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x1": 2.641941738241593,
+            "y1": 0,
+            "x2": 2.641941738241593,
+            "y2": 1.25
+          },
+          {
+            "id": "shape_3",
+            "type": "line",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x1": 2.641941738241593,
+            "y1": 7.5,
+            "x2": 2.641941738241593,
+            "y2": 6.25
+          },
+          {
+            "id": "shape_4",
+            "type": "line",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x1": 2.641941738241593,
+            "y1": 6.25,
+            "x2": 0.14194173824159295,
+            "y2": 1.25
+          },
+          {
+            "id": "shape_5",
+            "type": "arc",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "cx": 0.6919417382415901,
+            "cy": 1.7000000000000028,
+            "r": 0.6919417382415901,
+            "startAngle": -2.4,
+            "endAngle": 1.5707963267948966
+          }
+        ]
+      }
+    ],
+    "gridOffsetX": 2.3580582617584014,
+    "gridOffsetY": 0,
+    "defaultTagPrefix": "K",
+    "defaultComponentType": "Contato",
+    "defaultLabel": {
+      "visible": true,
+      "textMode": "tag",
+      "offsetX": -1,
+      "offsetY": 5,
+      "fontSize": 3.5,
+      "align": "right",
+      "rotation": 0
+    }
+  }
+}

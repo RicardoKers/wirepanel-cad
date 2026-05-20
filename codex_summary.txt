@@ -27,7 +27,7 @@ Current repo state
   - Reusable component library item = Template/Modelo.
   - Left panel = Library/Biblioteca for inserting templates.
   - Right panel = Inspector for object/project management.
-- The latest local work includes intelligent template reuse, copy/paste improvements and UI ergonomics for the Library, Inspector/Object panel and top toolbar.
+- The latest local work includes intelligent template reuse, copy/paste improvements, linked component references and UI ergonomics for the Library, Inspector/Object panel and top toolbar.
 
 Latest local changes ready to commit
 - codex_summary.txt:
@@ -66,6 +66,11 @@ Latest local changes ready to commit
   - Toolbar was further compacted into icon-only square buttons with visual group separators.
   - Right inspector navigation was compacted vertically with smaller rows and icons.
   - Object/properties rows and sections were tightened to reduce vertical scrolling.
+  - The Library save action is now a compact `+` button in the Library header.
+  - The Library header also has a compact import button for project template JSON files.
+  - Library templates are grouped by component type, with collapsible groups for App and Project templates.
+  - Component JSON export no longer asks for category; internal `category` is filled from the component type.
+  - Import/export feedback now appears in a small OK modal instead of inline text inside the Library panel.
 - src/components/PropertiesPanel.tsx:
   - Object panel content is now grouped into clearer sections:
     - Component/Componente
@@ -75,8 +80,10 @@ Latest local changes ready to commit
   - Top toolbar now has explicit Tools, View and File groups.
   - Toolbar controls use compact inline SVG icons with tooltips/aria labels.
   - Visible group labels and visible button text were removed to reduce vertical and horizontal footprint.
+  - Top toolbar was reorganized into unlabeled functional groups separated by dividers: file, view, history, edit, drawing, electrical and help.
+  - Toolbar now exposes frequent edit actions: undo, redo, copy, cut, paste, delete selection, group, ungroup and create component.
   - File/upload/help/export actions remain functionally unchanged.
-- The author signature `Kerschbaumer - IFC Luzerna` remains part of the app UI.
+- The author signature now reads `Kerschbaumer - IFC Luzerna - V. 0.1`.
 - These changes are ready to commit at the time this summary was updated.
 
 Current application overview
@@ -102,7 +109,7 @@ Important files
 - src/components/ComponentsPanel.tsx
   - Left Library panel.
   - App templates and project templates.
-  - Search, category collapse, template export/delete/rename actions.
+  - Search, type-based collapsible groups, template import/export/delete/rename actions.
 - src/components/RightPanel.tsx
   - Main right-side tab host.
   - Object, components, potentials, layers and project tabs.
@@ -127,6 +134,8 @@ Important files
   - Global application layout and visual styling.
 - public/help/manual.en.html
 - public/help/manual.pt-BR.html
+  - Built-in user manuals opened from the Help toolbar action.
+  - Updated to cover the current interface, icon toolbar, type-grouped Library, model JSON import/export, intelligent components, linked parts, Ctrl-click references, project files and PDF export.
 - .github/workflows/deploy.yml
 - vite.config.ts
 - README.md
@@ -439,7 +448,7 @@ Planned user workflow
 - User enters:
   - Type
   - Tag prefix
-  - Optional description/category
+  - Optional description
   - Optional `Part of`
 - The app creates a component instance linked to the selected grouped shapes.
 - The component gets a linked visible tag label.

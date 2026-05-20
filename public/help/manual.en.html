@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>2D CAD Manual</title>
+    <title>Wirepanel CAD Manual</title>
     <style>
       :root {
         color-scheme: dark;
@@ -84,7 +84,8 @@
       }
 
       p,
-      li {
+      li,
+      td {
         color: var(--muted);
       }
 
@@ -154,222 +155,242 @@
 
       th {
         background: rgba(24, 36, 51, 0.9);
+        color: var(--text);
       }
     </style>
   </head>
   <body>
     <main class="layout">
       <section class="hero">
-        <h1>2D CAD User Manual</h1>
+        <h1>Wirepanel CAD User Manual</h1>
         <p>
-          This manual covers the main workflow of the application, including drawing tools,
-          editing, potentials, components, project export and PDF generation.
+          Wirepanel CAD is a browser-based 2D CAD tool for industrial electrical drawings. This
+          manual covers drawing tools, potentials, reusable library models, intelligent components,
+          linked parts, project files and PDF export.
         </p>
         <div class="top-links">
-          <a href="./manual.pt-BR.html">Manual em Português</a>
-          <a href="#shortcuts">Shortcuts</a>
+          <a href="./manual.pt-BR.html">Manual em Portugues</a>
+          <a href="#interface">Interface</a>
           <a href="#components">Components</a>
-          <a href="#text">Text and Links</a>
+          <a href="#library">Library</a>
+          <a href="#shortcuts">Shortcuts</a>
         </div>
       </section>
 
-      <section class="section">
-        <h2>Interface overview</h2>
+      <section class="section" id="interface">
+        <h2>Interface Overview</h2>
         <div class="grid">
           <div class="card">
-            <h3>Top toolbar</h3>
-            <p>Contains drawing tools and global project actions.</p>
-            <ul>
-              <li><strong>Select</strong>: select, move, resize and edit objects.</li>
-              <li><strong>Line</strong>: draw regular lines.</li>
-              <li><strong>Potential</strong>: draw electrical potentials.</li>
-              <li><strong>Circle</strong> and <strong>Arc</strong>: draw circular geometry.</li>
-              <li><strong>Text</strong>: insert free or special text.</li>
-              <li><strong>Pin</strong>: insert connection pins.</li>
-              <li><strong>Pan</strong>: navigate the canvas without editing.</li>
-              <li><strong>Fit to Page</strong>: frame the current sheet in view.</li>
-              <li><strong>Download Project</strong> and <strong>Upload Project</strong>: save and open project JSON files.</li>
-              <li><strong>Help</strong>: open this manual.</li>
-              <li><strong>Export PDF</strong>: generate the final PDF document.</li>
-            </ul>
-          </div>
-          <div class="card">
-            <h3>Center canvas</h3>
+            <h3>Top Toolbar</h3>
             <p>
-              This is the drawing area. The sheet is displayed inside a larger viewport, allowing zoom,
-              pan, click selection, marquee selection and snap-based placement.
+              The toolbar uses compact icon buttons. Hover a button to see its tooltip. It contains
+              drawing tools, view actions, project JSON actions, help and PDF export.
             </p>
           </div>
           <div class="card">
-            <h3>Left panel</h3>
+            <h3>Center Canvas</h3>
             <p>
-              Shows available components, split between <strong>App Library</strong> and
-              <strong> Project Components</strong>.
+              The canvas contains the drawing sheet, grid, page frame, markers, shapes and component
+              graphics. You can zoom, pan, select by click, select by rectangle and place components.
             </p>
           </div>
           <div class="card">
-            <h3>Right panel</h3>
-            <p>Contains the <strong>Properties</strong>, <strong>Potentials</strong>, <strong>Layers</strong> and <strong>Settings</strong> tabs.</p>
+            <h3>Left Library</h3>
+            <p>
+              The Library shows reusable models from the app and from the current project. Models are
+              grouped by component type and each group can be collapsed.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Right Inspector</h3>
+            <p>
+              The right panel contains Object, Components, Potentials, Layers and Project sections.
+              The Object section is organized into Component, Label and Geometry blocks.
+            </p>
           </div>
         </div>
       </section>
 
       <section class="section">
-        <h2>Basic drawing and editing</h2>
-        <ol>
-          <li>Choose a tool in the top toolbar.</li>
-          <li>Click on the canvas to start the object.</li>
-          <li>Use the second click to finish lines, potentials and arcs.</li>
-          <li>Switch back to <strong>Select</strong> to move, edit or multi-select objects.</li>
-        </ol>
+        <h2>Drawing and Editing</h2>
+        <ul>
+          <li><strong>Select</strong>: select, move, resize and edit objects.</li>
+          <li><strong>Line</strong>: draw regular lines.</li>
+          <li><strong>Potential</strong>: draw electrical potentials with connection logic.</li>
+          <li><strong>Circle</strong> and <strong>Arc</strong>: draw circular geometry.</li>
+          <li><strong>Text</strong>: insert regular text, special text or linked text.</li>
+          <li><strong>Pin</strong>: insert connection pins.</li>
+          <li><strong>Pan</strong>: navigate the canvas without editing geometry.</li>
+        </ul>
         <p>
-          Multi-selection can be done with a selection box. Hold <code>Alt</code> to use containment
-          instead of simple intersection.
+          Multi-selection can be done with a selection rectangle. Hold <code>Alt</code> while dragging
+          to select only objects fully contained by the rectangle.
         </p>
       </section>
 
       <section class="section">
         <h2>Layers</h2>
-        <p>
-          The <strong>Layers</strong> tab organizes the drawing into logical levels.
-        </p>
+        <p>The Layers section organizes the drawing into logical levels.</p>
         <ul>
-          <li>Create new layers.</li>
-          <li>Rename existing layers.</li>
-          <li>Show or hide a layer.</li>
-          <li>Lock a layer to prevent editing.</li>
-          <li>Set the active layer for newly created objects.</li>
-          <li>Delete extra layers when they are no longer needed.</li>
+          <li>Create, rename, show, hide, lock and delete layers.</li>
+          <li>Choose the active layer for newly created objects.</li>
+          <li>Move selected objects to another layer from the selection context menu.</li>
         </ul>
-        <p>
-          Selected objects can also be moved to another layer through the selection context menu.
-        </p>
       </section>
 
       <section class="section">
         <h2>Potentials</h2>
         <p>
-          Potentials are special lines used to represent electrical connections. Each potential has
-          a number, name and wire size in <code>mm²</code>.
+          Potentials are electrical connection lines. Each potential has a number, name and wire size
+          in <code>mm2</code>. Potential labels and endpoint arrows are drawn on the canvas and exported
+          to PDF.
         </p>
         <ul>
-          <li>While drawing, a potential can snap and connect to pins and other potentials.</li>
-          <li>If an endpoint touches another potential with the same number, a connection is created.</li>
-          <li>This also works when dragging the line or dragging one of its endpoints.</li>
-          <li>The <strong>Potentials</strong> tab lists potentials on the current page and provides <strong>Renumber</strong>.</li>
+          <li>Potential endpoints can connect to pins and other potentials.</li>
+          <li>Connections can be created while drawing or while moving an existing endpoint.</li>
+          <li>The Potentials section lists the current page potentials and can renumber them.</li>
+          <li>Potential endpoint labels can be used as cross-reference links with <code>Ctrl</code> + click.</li>
         </ul>
       </section>
 
       <section class="section" id="text">
-        <h2>Text, links and special text</h2>
+        <h2>Text and Links</h2>
         <div class="grid">
           <div class="card">
-            <h3>Regular text</h3>
+            <h3>Regular Text</h3>
+            <p>Text can be edited in the Object properties, including content, position and font size.</p>
+          </div>
+          <div class="card">
+            <h3>Linked Text</h3>
             <p>
-              A regular text object can have free content, font size and position adjusted in the
-              properties panel.
+              Enable the Link property and set the target address. Use <code>Ctrl</code> + click to
+              navigate to the linked region.
             </p>
           </div>
           <div class="card">
-            <h3>Linked text</h3>
-            <p>
-              Enable the <strong>Link</strong> property and fill in <strong>Target</strong>. Navigation
-              happens with <strong>Ctrl + click</strong> on Windows/Linux or <strong>Cmd + click</strong>
-              on macOS.
-            </p>
-          </div>
-          <div class="card">
-            <h3>Special text</h3>
-            <p>The placeholders below are replaced automatically on screen and in PDF export:</p>
+            <h3>Special Text</h3>
+            <p>The following placeholders are replaced on screen and in PDF export:</p>
             <ul>
               <li><code>&lt;project&gt;</code>: project name</li>
               <li><code>&lt;drawing&gt;</code>: drawing name</li>
               <li><code>&lt;author&gt;</code>: author</li>
-              <li><code>&lt;page&gt;</code>: current sheet number</li>
-              <li><code>&lt;n_pages&gt;</code>: total number of sheets</li>
+              <li><code>&lt;page&gt;</code>: current page number</li>
+              <li><code>&lt;n_pages&gt;</code>: total page count</li>
             </ul>
           </div>
         </div>
       </section>
 
       <section class="section" id="components">
-        <h2>Components</h2>
+        <h2>Intelligent Components</h2>
         <p>
-          The application works with two kinds of components.
+          A component is a logical project element linked to one or more drawing shapes. It has an
+          invisible <code>componentId</code>, an editable tag prefix, a sequential number and a visible
+          label bound to the component.
         </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Create a Component</h3>
+            <ol>
+              <li>Draw the symbol and group its shapes.</li>
+              <li>Right-click the group and choose <strong>Create component</strong>.</li>
+              <li>Set the tag prefix, for example <code>K</code>.</li>
+              <li>Set the component type, for example <code>Contactor</code>.</li>
+              <li>Optionally choose another component in <strong>Part of</strong>.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Tags and Labels</h3>
+            <p>
+              The tag is stored as prefix plus number, such as <code>K1</code> or <code>K2</code>.
+              The visible label is not loose text; it is bound to the component and can be moved,
+              aligned, resized, hidden or rotated from Object properties.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Copy and Paste</h3>
+            <p>
+              Copying a component creates a new component instance with the same characteristics and
+              the next sequential number. The <strong>Part of</strong> relationship is cleared when copied.
+            </p>
+          </div>
+        </div>
+
+        <h3>Component Parts and Cross-References</h3>
+        <p>
+          A secondary component, such as an auxiliary contact, can be assigned as <strong>Part of</strong>
+          a main component, such as a coil. Parts inherit the main component tag and number so they
+          behave as one logical device.
+        </p>
+        <ul>
+          <li>The main component can show its parts above, below, left or right.</li>
+          <li>Spacing controls the distance between shown parts.</li>
+          <li>Offset controls the distance from the main component to the first shown part.</li>
+          <li>Address offset X/Y and address rotation position the reference text beside each shown part.</li>
+          <li>Parts are ordered by insertion order. To move a part to the end, remove <strong>Part of</strong> and add it again.</li>
+          <li>Use <code>Ctrl</code> + click on component reference text to jump to the related component or part.</li>
+        </ul>
+      </section>
+
+      <section class="section" id="library">
+        <h2>Library and Reusable Models</h2>
         <table>
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Usage</th>
-              <th>Where it is stored</th>
+              <th>Area</th>
+              <th>Purpose</th>
+              <th>Storage</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>App Library</td>
-              <td>Built-in components shipped with the application.</td>
-              <td>JSON files inside <code>src/library/components</code> before the build.</td>
+              <td>App Templates</td>
+              <td>Built-in reusable models bundled with the application.</td>
+              <td>JSON files in <code>src/library/components</code> before the build.</td>
             </tr>
             <tr>
-              <td>Project Components</td>
-              <td>Components created inside the current drawing.</td>
+              <td>Project Templates</td>
+              <td>Reusable models available only in the current project.</td>
               <td>Inside the project JSON file.</td>
             </tr>
           </tbody>
         </table>
-
-        <h3>Create a project component</h3>
-        <ol>
-          <li>Draw the elements on the canvas.</li>
-          <li>Select the desired objects.</li>
-          <li>Click <strong>Save to Project</strong>.</li>
-        </ol>
-
-        <h3>Insert a component</h3>
-        <p>
-          Click the component and then click on the canvas, or drag it to the desired position.
-          Placement respects the grid and the symbol's internal offsets.
-        </p>
-
-        <h3>Generate JSON for the app library</h3>
-        <ol>
-          <li>Save the symbol as a project component.</li>
-          <li>Click <strong>Download JSON</strong>.</li>
-          <li>Choose a file name and a category.</li>
-          <li>The browser downloads the JSON file.</li>
-          <li>Later, copy that file into <code>src/library/components</code> in the repository.</li>
-          <li>Rebuild the application to include the component in the built-in library.</li>
-        </ol>
-        <p>
-          App library categories can be collapsed or expanded to make large libraries easier to browse.
-        </p>
+        <ul>
+          <li>Use the <strong>+</strong> button in the Library header to save the current selection as a project model.</li>
+          <li>Use the import button beside <strong>+</strong> to import a model JSON into the project library.</li>
+          <li>Click or drag a model to insert it on the canvas.</li>
+          <li>Right-click a project model to insert, rename, download JSON or delete it.</li>
+          <li>Models are grouped by component type. Groups can be collapsed to simplify navigation.</li>
+          <li>Exported model JSON uses the component type internally; there is no separate category prompt.</li>
+        </ul>
       </section>
 
       <section class="section">
-        <h2>Save, load and export</h2>
+        <h2>Project Files and PDF</h2>
         <ul>
-          <li><strong>Download Project</strong>: creates a JSON file with pages, layers and project components.</li>
+          <li><strong>Download Project</strong>: saves pages, layers, shapes, project templates and component instances to JSON.</li>
           <li><strong>Upload Project</strong>: opens a JSON file in the current application format.</li>
-          <li><strong>Export PDF</strong>: generates the final document using the values from the <strong>Settings</strong> tab.</li>
+          <li><strong>Export PDF</strong>: exports the drawing using Project settings, including visible component labels and linked part references.</li>
         </ul>
         <p>
-          The current project format is strict. Older or partial schemas outside the current structure are rejected.
+          The current project format is strict. Older or partial schemas outside the current structure
+          are rejected.
         </p>
       </section>
 
       <section class="section">
-        <h2>Settings</h2>
+        <h2>Project Settings</h2>
         <ul>
           <li><strong>Language</strong>: switch between English and Brazilian Portuguese.</li>
           <li><strong>PDF</strong>: project name, drawing name, author, sheet, orientation and margins.</li>
-          <li><strong>Grid</strong>: enable snap, define grid size and grid color.</li>
+          <li><strong>Grid</strong>: enable snap and set grid size and color.</li>
           <li><strong>Pins</strong>: show or hide the connection X marker.</li>
         </ul>
+        <p>The lower-right signature shows <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>
 
       <section class="section" id="shortcuts">
-        <h2>Keyboard shortcuts</h2>
+        <h2>Keyboard Shortcuts</h2>
         <table>
           <thead>
             <tr>
@@ -386,17 +407,19 @@
             <tr><td><span class="kbd">Delete</span> or <span class="kbd">Backspace</span></td><td>Delete selection</td></tr>
             <tr><td><span class="kbd">Esc</span></td><td>Cancel the current action or leave placement mode</td></tr>
             <tr><td>Arrow keys</td><td>Move the selection by the grid step or by 1 unit</td></tr>
+            <tr><td><span class="kbd">Ctrl</span> + click</td><td>Open text, potential or component reference links</td></tr>
           </tbody>
         </table>
       </section>
 
       <section class="section">
-        <h2>Practical tips</h2>
+        <h2>Practical Tips</h2>
         <ul>
-          <li>Use <strong>Fit to Page</strong> after heavy zooming to quickly frame the sheet again.</li>
-          <li>Set up layers early if you plan to build large reusable component libraries.</li>
-          <li>For reusable symbols, create them as project components first and then download the JSON for the app library.</li>
-          <li>For title blocks and captions, combine regular text with the available special placeholders.</li>
+          <li>Use clear component types because the Library navigation is grouped by type.</li>
+          <li>For reusable electrical symbols, create an intelligent component before saving it as a project model.</li>
+          <li>Use project model JSON import/export to grow the library gradually.</li>
+          <li>Use <strong>Part of</strong> to connect coils, main contacts and auxiliary contacts logically.</li>
+          <li>Check PDF output after adjusting rotated labels or linked part references.</li>
         </ul>
       </section>
     </main>

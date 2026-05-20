@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import type { DragEvent, ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { ChangeEvent, DragEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Component, LibraryComponent, LineStyle, Shape } from "../models";
 import { buildComponentPlacementKey } from "../utils/components";
@@ -40,13 +40,13 @@ type ComponentsPanelProps = {
   appComponents: LibraryComponent[];
   projectComponents: Component[];
   onSaveComponent: () => void;
+  onImportComponent: (file: File) => void;
   onSelectComponent: (id: string) => void;
   onDeleteComponent: (id: string) => void;
   onRenameComponent: (id: string, name: string) => void;
   onExportComponent?: (id: string) => void;
   placingComponentId: string | null;
   showPinConnection: boolean;
-  exportStatus?: { kind: "success" | "error"; message: string } | null;
 };
 
 type ComponentCardItem = {
@@ -61,6 +61,40 @@ type ComponentMenuState = {
   x: number;
   y: number;
 };
+
+type ComponentGroup<TComponent extends Component> = {
+  key: string;
+  label: string;
+  items: TComponent[];
+};
+
+function buildComponentTypeGroups<TComponent extends Component>(
+  components: TComponent[],
+  fallbackLabel: string,
+  keyPrefix: string
+): ComponentGroup<TComponent>[] {
+  const groups = new Map<string, { label: string; items: TComponent[] }>();
+
+  components.forEach((component) => {
+    const label = component.defaultComponentType?.trim() || fallbackLabel;
+    const key = `${keyPrefix}:${label.toLowerCase()}`;
+    const bucket = groups.get(key);
+
+    if (bucket) {
+      bucket.items.push(component);
+    } else {
+      groups.set(key, { label, items: [component] });
+    }
+  });
+
+  return Array.from(groups.entries())
+    .sort(([, a], [, b]) => a.label.localeCompare(b.label))
+    .map(([key, group]) => ({
+      key,
+      label: group.label,
+      items: group.items
+    }));
+}
 
 function getLineStyleProps(lineStyle?: LineStyle) {
   const style = lineStyle ?? "solid";
@@ -184,18 +218,19 @@ export default function ComponentsPanel({
   appComponents,
   projectComponents,
   onSaveComponent,
+  onImportComponent,
   onSelectComponent,
   onDeleteComponent,
   onRenameComponent,
   onExportComponent,
   placingComponentId,
-  showPinConnection,
-  exportStatus
+  showPinConnection
 }: ComponentsPanelProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [componentMenu, setComponentMenu] = useState<ComponentMenuState | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const searchTerm = query.trim().toLowerCase();
 
@@ -210,30 +245,25 @@ export default function ComponentsPanel({
   );
 
   const appGroups = useMemo(() => {
-    const groups = new Map<string, LibraryComponent[]>();
-    filteredAppComponents.forEach((component) => {
-      const key = component.category.trim() || "__uncategorized__";
-      const bucket = groups.get(key);
-      if (bucket) {
-        bucket.push(component);
-      } else {
-        groups.set(key, [component]);
-      }
-    });
-    return Array.from(groups.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, items]) => ({
-        key,
-        label: key === "__uncategorized__" ? t("components.uncategorized") : key,
-        items
-      }));
+    return buildComponentTypeGroups(filteredAppComponents, t("components.untyped"), "app");
   }, [filteredAppComponents, t]);
+
+  const projectGroups = useMemo(() => {
+    return buildComponentTypeGroups(filteredProjectComponents, t("components.untyped"), "project");
+  }, [filteredProjectComponents, t]);
 
   function toggleGroup(key: string) {
     setCollapsedGroups((prev) => ({
       ...prev,
       [key]: !prev[key]
     }));
+  }
+
+  function handleImportInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    onImportComponent(file);
   }
 
   function getComponentBounds(shapes: Shape[]) {
@@ -509,11 +539,35 @@ export default function ComponentsPanel({
     <section className="panel library-panel" onClick={() => setComponentMenu(null)}>
       <header className="panel-header library-header">
         <h3>{t("components.title")}</h3>
+        <div className="library-header-actions">
+          <button
+            type="button"
+            className="icon-button library-add-button"
+            title={t("components.importJson")}
+            aria-label={t("components.importJson")}
+            onClick={() => importInputRef.current?.click()}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="icon-button library-add-button"
+            title={t("components.saveToProject")}
+            aria-label={t("components.saveToProject")}
+            onClick={onSaveComponent}
+          >
+            +
+          </button>
+          <input
+            ref={importInputRef}
+            className="visually-hidden"
+            type="file"
+            accept="application/json,.json"
+            onChange={handleImportInputChange}
+          />
+        </div>
       </header>
       <div className="panel-body component-list">
-        <button className="tool-button primary library-save-button" onClick={onSaveComponent}>
-          {t("components.saveToProject")}
-        </button>
         <input
           className="component-search-input"
           type="search"
@@ -521,9 +575,6 @@ export default function ComponentsPanel({
           placeholder={t("components.searchPlaceholder")}
           onChange={(event) => setQuery(event.target.value)}
         />
-        {exportStatus && (
-          <p className={exportStatus.kind === "error" ? "error-text" : "success-text"}>{exportStatus.message}</p>
-        )}
         <div className="component-section">
           <div className="component-section-header">
             <span>{t("components.appLibrary")}</span>
@@ -566,17 +617,36 @@ export default function ComponentsPanel({
             <span>{t("components.projectComponents")}</span>
             <span className="component-section-count">{projectComponents.length}</span>
           </div>
-          {filteredProjectComponents.length === 0 ? (
+          {projectGroups.length === 0 ? (
             <p className="muted">{noMatches ? t("components.noMatches") : t("components.emptyProjectComponents")}</p>
           ) : (
-            <div className="component-group-grid">
-              {filteredProjectComponents.map((component) => renderCard({
-                key: buildComponentPlacementKey("project", component.id),
-                source: "project",
-                component,
-                editableName: true
-              }))}
-            </div>
+            projectGroups.map((group) => (
+              <div key={group.key} className="component-group">
+                <button
+                  type="button"
+                  className="component-group-toggle"
+                  onClick={() => toggleGroup(group.key)}
+                >
+                  <span className="component-group-title">{group.label}</span>
+                  <span className="component-group-toggle-meta">
+                    <span className="component-group-toggle-count">{group.items.length}</span>
+                    <span className="component-group-toggle-icon">
+                      {searchTerm.length > 0 || !collapsedGroups[group.key] ? "-" : "+"}
+                    </span>
+                  </span>
+                </button>
+                {(searchTerm.length > 0 || !collapsedGroups[group.key]) && (
+                  <div className="component-group-grid">
+                    {group.items.map((component) => renderCard({
+                      key: buildComponentPlacementKey("project", component.id),
+                      source: "project",
+                      component,
+                      editableName: true
+                    }))}
+                  </div>
+                )}
+              </div>
+            ))
           )}
           <p className="muted small">{t("components.exportHelp")}</p>
         </div>

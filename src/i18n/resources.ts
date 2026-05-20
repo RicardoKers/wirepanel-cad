@@ -14,7 +14,12 @@ export const resources = {
         groups: {
           tools: "Tools",
           view: "View",
-          file: "File"
+          file: "File",
+          history: "History",
+          edit: "Edit",
+          drawing: "Drawing",
+          electrical: "Electrical",
+          help: "Help"
         },
         tools: {
           select: "Select",
@@ -31,7 +36,16 @@ export const resources = {
           downloadProject: "Download Project",
           uploadProject: "Upload Project",
           help: "Help",
-          exportPdf: "Export PDF"
+          exportPdf: "Export PDF",
+          undo: "Undo",
+          redo: "Redo",
+          copy: "Copy",
+          cut: "Cut",
+          paste: "Paste",
+          delete: "Delete selection",
+          group: "Group selection",
+          ungroup: "Ungroup",
+          createComponent: "Create component"
         }
       },
       rightPanel: {
@@ -81,6 +95,7 @@ export const resources = {
         appLibrary: "App Templates",
         projectComponents: "Project Templates",
         saveToProject: "Save selection as template",
+        importJson: "Import template JSON",
         defaultName: "Template {{number}}",
         emptyAppLibrary: "No app templates yet.",
         emptyProjectComponents: "No project templates yet.",
@@ -96,13 +111,17 @@ export const resources = {
         exportToAppLibrary: "Download template JSON",
         exportSuccess: "Template JSON downloaded: {{fileName}}",
         exportFailed: "Could not download the template JSON.",
+        importSuccess: "Template JSON imported: {{fileName}}",
+        importFailed: "Could not import the template JSON.",
+        messageSuccessTitle: "Library update",
+        messageErrorTitle: "Library error",
         exportFilePrompt: "Template JSON file name",
-        exportCategoryPrompt: "Category",
         exportHelp: "Downloaded files can be added to src/library/components and bundled in the next build.",
         searchPlaceholder: "Search templates",
         sourceApp: "App",
         sourceProject: "Project",
         uncategorized: "Uncategorized",
+        untyped: "No type",
         noMatches: "No templates match the current filter."
       },
       layers: {
@@ -228,6 +247,7 @@ export const resources = {
         componentDefaultType: "Component",
         componentTagPreview: "Generated tag: {{tag}}",
         cancel: "Cancel",
+        ok: "OK",
         create: "Create",
         ungroup: "Ungroup",
         moveToLayer: "Move to layer",
@@ -248,7 +268,12 @@ export const resources = {
         groups: {
           tools: "Ferramentas",
           view: "Visualiza\u00E7\u00E3o",
-          file: "Arquivo"
+          file: "Arquivo",
+          history: "Hist\u00F3rico",
+          edit: "Edi\u00E7\u00E3o",
+          drawing: "Desenho",
+          electrical: "El\u00E9trica",
+          help: "Ajuda"
         },
         tools: {
           select: "Selecionar",
@@ -265,7 +290,16 @@ export const resources = {
           downloadProject: "Baixar Projeto",
           uploadProject: "Carregar Projeto",
           help: "Ajuda",
-          exportPdf: "Exportar PDF"
+          exportPdf: "Exportar PDF",
+          undo: "Desfazer",
+          redo: "Refazer",
+          copy: "Copiar",
+          cut: "Recortar",
+          paste: "Colar",
+          delete: "Excluir sele\u00E7\u00E3o",
+          group: "Agrupar sele\u00E7\u00E3o",
+          ungroup: "Desagrupar",
+          createComponent: "Criar componente"
         }
       },
       rightPanel: {
@@ -315,6 +349,7 @@ export const resources = {
         appLibrary: "Modelos do app",
         projectComponents: "Modelos do projeto",
         saveToProject: "Salvar sele\u00E7\u00E3o como modelo",
+        importJson: "Importar JSON de modelo",
         defaultName: "Modelo {{number}}",
         emptyAppLibrary: "Nenhum modelo do app ainda.",
         emptyProjectComponents: "Nenhum modelo do projeto ainda.",
@@ -330,13 +365,17 @@ export const resources = {
         exportToAppLibrary: "Baixar modelo JSON",
         exportSuccess: "JSON do modelo baixado: {{fileName}}",
         exportFailed: "N\u00E3o foi poss\u00EDvel baixar o JSON do modelo.",
+        importSuccess: "JSON do modelo importado: {{fileName}}",
+        importFailed: "N\u00E3o foi poss\u00EDvel importar o JSON do modelo.",
+        messageSuccessTitle: "Biblioteca atualizada",
+        messageErrorTitle: "Erro na biblioteca",
         exportFilePrompt: "Nome do arquivo JSON do modelo",
-        exportCategoryPrompt: "Categoria",
         exportHelp: "Os arquivos baixados podem ser adicionados a src/library/components e inclu\u00EDdos no pr\u00F3ximo build.",
         searchPlaceholder: "Buscar modelos",
         sourceApp: "App",
         sourceProject: "Projeto",
         uncategorized: "Sem categoria",
+        untyped: "Sem tipo",
         noMatches: "Nenhum modelo corresponde ao filtro atual."
       },
       layers: {
@@ -462,6 +501,7 @@ export const resources = {
         componentDefaultType: "Componente",
         componentTagPreview: "Tag gerada: {{tag}}",
         cancel: "Cancelar",
+        ok: "OK",
         create: "Criar",
         ungroup: "Desagrupar",
         moveToLayer: "Mover para camada",
