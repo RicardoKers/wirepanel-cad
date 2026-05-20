@@ -922,8 +922,11 @@ body {
 .context-menu {
   position: fixed;
   z-index: 1000;
-  max-height: min(520px, calc(100vh - 24px));
+  width: min(240px, calc(100vw - 24px));
+  max-width: calc(100vw / 3);
+  max-height: calc(100vh / 3);
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   min-width: 160px;
   padding: 6px;
