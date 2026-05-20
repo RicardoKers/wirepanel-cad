@@ -227,6 +227,10 @@
           to select only objects fully contained by the rectangle.
         </p>
         <p>
+          Locked or hidden layer objects are ignored by selection and clipboard actions, even if they
+          were selected before the layer was locked.
+        </p>
+        <p>
           Right-click a selection to access common CAD actions such as delete, rotate, mirror, align,
           group, ungroup, create component and move to layer. Alignment uses the current selection as
           the reference bounds.
@@ -329,7 +333,7 @@
         </p>
         <ul>
           <li>The main component can show its parts above, below, left or right.</li>
-          <li>Spacing controls the distance between shown parts.</li>
+          <li>Spacing controls the distance between shown parts and uses the real rotated symbol size.</li>
           <li>Offset controls the distance from the main component to the first shown part.</li>
           <li>Address offset X/Y and address rotation position the reference text beside each shown part.</li>
           <li>When a part shows the main component link, the text is always the main component address. Its X/Y position and rotation can be edited in Object properties.</li>
@@ -390,8 +394,8 @@
         <ul>
           <li><strong>Language</strong>: switch between English and Brazilian Portuguese.</li>
           <li><strong>PDF</strong>: project name, drawing name, author, sheet, orientation and margins.</li>
-          <li><strong>Grid</strong>: enable snap and set grid size and color.</li>
-          <li><strong>Pins</strong>: show or hide the connection X marker.</li>
+          <li><strong>Grid</strong>: enable snap and set grid size and color. The visible grid is drawn on the same coordinates used by snap.</li>
+          <li><strong>Pins</strong>: show or hide the connection X marker. It is hidden by default for new projects.</li>
         </ul>
         <p>The lower-right signature shows <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>

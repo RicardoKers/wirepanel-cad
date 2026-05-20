@@ -2,9 +2,9 @@
   "schema": "wirepanel-cad.app-library-component",
   "version": 1,
   "component": {
-    "id": "contato-1na",
-    "name": "Contato 1NA",
-    "category": "Contato",
+    "id": "borne-1",
+    "name": "Borne 1",
+    "category": "Borne",
     "description": "",
     "tags": [],
     "shapes": [
@@ -24,23 +24,22 @@
             "lineWidth": 1,
             "fill": "transparent",
             "lineStyle": "solid",
-            "x1": 2.641941738241593,
-            "y1": 0,
-            "x2": 2.641941738241593,
-            "y2": 1.25
+            "x1": 1,
+            "y1": 1,
+            "x2": 1,
+            "y2": 2.9000000000000057
           },
           {
             "id": "shape_3",
-            "type": "line",
+            "type": "circle",
             "layerId": "layer-1",
             "lineColor": "#000000",
             "lineWidth": 1,
             "fill": "transparent",
             "lineStyle": "solid",
-            "x1": 2.641941738241593,
-            "y1": 7.5,
-            "x2": 2.641941738241593,
-            "y2": 6.25
+            "cx": 1,
+            "cy": 3.5,
+            "r": 0.59375
           },
           {
             "id": "shape_4",
@@ -50,40 +49,57 @@
             "lineWidth": 1,
             "fill": "transparent",
             "lineStyle": "solid",
-            "x1": 2.641941738241593,
-            "y1": 6.25,
-            "x2": 0.14194173824159295,
-            "y2": 1.25
+            "x1": 1,
+            "y1": 4.099999999999994,
+            "x2": 1,
+            "y2": 6
           },
           {
             "id": "shape_5",
-            "type": "arc",
+            "type": "pin",
             "layerId": "layer-1",
             "lineColor": "#000000",
             "lineWidth": 1,
             "fill": "transparent",
             "lineStyle": "solid",
-            "cx": 0.6919417382415901,
-            "cy": 1.7000000000000028,
-            "r": 0.6919417382415901,
-            "startAngle": -2.4,
-            "endAngle": 1.5707963267948966
+            "x": 1,
+            "y": 1,
+            "tag": "1",
+            "tagX": 1.7000000000000028,
+            "tagY": 3,
+            "tagFontSize": 3
+          },
+          {
+            "id": "shape_6",
+            "type": "pin",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x": 1,
+            "y": 6,
+            "tag": "",
+            "tagX": 1,
+            "tagY": 6,
+            "tagFontSize": 4
           }
         ]
       }
     ],
-    "gridOffsetX": 2.3580582617584014,
-    "gridOffsetY": 0,
-    "defaultTagPrefix": "K",
-    "defaultComponentType": "Contato",
+    "gridOffsetX": 1.5,
+    "gridOffsetY": 1.5,
+    "defaultTagPrefix": "X",
+    "defaultComponentType": "Borne",
     "defaultLabel": {
       "visible": true,
       "textMode": "tag",
       "offsetX": -1,
-      "offsetY": 5,
+      "offsetY": 2.6,
       "fontSize": 3.5,
       "align": "right",
       "rotation": 0
-    }
+    },
+    "defaultShowParentLink": false
   }
 }

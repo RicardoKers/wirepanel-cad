@@ -113,6 +113,19 @@ type Bounds = {
   maxY: number;
 };
 
+function getRotatedScaledBoundsSize(bounds: Bounds, rotation: number, scale: number) {
+  const width = Math.max(1, bounds.maxX - bounds.minX) * scale;
+  const height = Math.max(1, bounds.maxY - bounds.minY) * scale;
+  const angle = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angle));
+  const sin = Math.abs(Math.sin(angle));
+
+  return {
+    width: width * cos + height * sin,
+    height: width * sin + height * cos
+  };
+}
+
 type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 
 type ResizeState = {
@@ -714,7 +727,7 @@ export default function CanvasView({
         tag: t("app.newPin"),
         tagX: world.x,
         tagY: world.y,
-        tagFontSize: 4
+        tagFontSize: 3
       };
       onAddShape(pin);
       onSelect([pin.id]);
@@ -1161,8 +1174,6 @@ export default function CanvasView({
     }
   }
 
-  const gridPatternSize = gridSize;
-  const gridId = "grid";
   const clipId = "paper-clip";
   const layout = getMarkerLayout(pdfSettings);
   const {
@@ -1180,6 +1191,23 @@ export default function CanvasView({
     rowHeight,
     showMarkers
   } = layout;
+  const gridPath = useMemo(() => {
+    if (gridSize <= 0) return "";
+
+    const commands: string[] = [];
+    const epsilon = gridSize / 1000;
+
+    for (let x = 0; x <= pageWidth + epsilon; x += gridSize) {
+      const value = Number(x.toFixed(6));
+      commands.push(`M ${value} 0 V ${pageHeight}`);
+    }
+    for (let y = 0; y <= pageHeight + epsilon; y += gridSize) {
+      const value = Number(y.toFixed(6));
+      commands.push(`M 0 ${value} H ${pageWidth}`);
+    }
+
+    return commands.join(" ");
+  }, [gridSize, pageHeight, pageWidth]);
 
   function fitViewToPage() {
     const svg = svgRef.current;
@@ -1419,12 +1447,13 @@ export default function CanvasView({
           if (!partItem || !partItem.shapes.some((shape) => isShapeVisible(shape))) return null;
           const bounds = partItem.bounds;
           const scale = Math.max(0.1, display.scale);
+          const rotatedSize = getRotatedScaledBoundsSize(bounds, display.rotation, scale);
           return {
             part,
             partItem,
             bounds,
-            scaledWidth: Math.max(1, bounds.maxX - bounds.minX) * scale,
-            scaledHeight: Math.max(1, bounds.maxY - bounds.minY) * scale
+            displayWidth: rotatedSize.width,
+            displayHeight: rotatedSize.height
           };
         })
         .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -1435,31 +1464,31 @@ export default function CanvasView({
       const addressRotation = display.addressRotation ?? 0;
       let horizontalOffset = 0;
       let verticalOffset = 0;
-      return parts.map(({ part, partItem, bounds: partBounds, scaledWidth, scaledHeight }) => {
+      return parts.map(({ part, partItem, bounds: partBounds, displayWidth, displayHeight }) => {
         const scale = Math.max(0.1, display.scale);
         const parentCenterX = (parentBounds.minX + parentBounds.maxX) / 2;
         const parentCenterY = (parentBounds.minY + parentBounds.maxY) / 2;
         let symbolCenterX = parentCenterX;
-        let symbolCenterY = parentBounds.maxY + startOffset + scaledHeight / 2;
+        let symbolCenterY = parentBounds.maxY + startOffset + displayHeight / 2;
         if (display.position === "right") {
-          symbolCenterX = parentBounds.maxX + startOffset + horizontalOffset + scaledWidth / 2;
+          symbolCenterX = parentBounds.maxX + startOffset + horizontalOffset + displayWidth / 2;
           symbolCenterY = parentCenterY;
-          horizontalOffset += scaledWidth + spacing;
+          horizontalOffset += displayWidth + spacing;
         }
         if (display.position === "left") {
-          symbolCenterX = parentBounds.minX - startOffset - horizontalOffset - scaledWidth / 2;
+          symbolCenterX = parentBounds.minX - startOffset - horizontalOffset - displayWidth / 2;
           symbolCenterY = parentCenterY;
-          horizontalOffset += scaledWidth + spacing;
+          horizontalOffset += displayWidth + spacing;
         }
         if (display.position === "below") {
           symbolCenterX = parentCenterX;
-          symbolCenterY = parentBounds.maxY + startOffset + verticalOffset + scaledHeight / 2;
-          verticalOffset += scaledHeight + spacing;
+          symbolCenterY = parentBounds.maxY + startOffset + verticalOffset + displayHeight / 2;
+          verticalOffset += displayHeight + spacing;
         }
         if (display.position === "above") {
           symbolCenterX = parentCenterX;
-          symbolCenterY = parentBounds.minY - startOffset - verticalOffset - scaledHeight / 2;
-          verticalOffset += scaledHeight + spacing;
+          symbolCenterY = parentBounds.minY - startOffset - verticalOffset - displayHeight / 2;
+          verticalOffset += displayHeight + spacing;
         }
         const address = getInstanceAddress(part);
         const textX = symbolCenterX + addressOffsetX;
@@ -2083,16 +2112,6 @@ export default function CanvasView({
         onContextMenu={handleContextMenu}
       >
         <defs>
-          <pattern id={gridId} width={gridPatternSize} height={gridPatternSize} patternUnits="userSpaceOnUse">
-            <path
-              d={`M ${gridPatternSize} 0 L 0 0 0 ${gridPatternSize}`}
-              fill="none"
-              stroke={gridColor}
-              strokeWidth="0.25"
-              vectorEffect="non-scaling-stroke"
-              shapeRendering="crispEdges"
-            />
-          </pattern>
           <clipPath id={clipId}>
             <rect x={0} y={0} width={pageWidth} height={pageHeight} />
           </clipPath>
@@ -2106,14 +2125,16 @@ export default function CanvasView({
             height={pageHeight}
             className="paper-rect"
           />
-          <rect
-            x={0}
-            y={0}
-            width={pageWidth}
-            height={pageHeight}
-            fill={`url(#${gridId})`}
-            clipPath={`url(#${clipId})`}
-          />
+          {gridPath && (
+            <path
+              d={gridPath}
+              fill="none"
+              stroke={gridColor}
+              strokeWidth={0.7}
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+            />
+          )}
           <rect
             x={frameX}
             y={frameY}

@@ -1,0 +1,65 @@
+{
+  "schema": "wirepanel-cad.app-library-component",
+  "version": 1,
+  "component": {
+    "id": "conector",
+    "name": "Conector",
+    "category": "",
+    "description": "",
+    "tags": [],
+    "shapes": [
+      {
+        "id": "shape_1",
+        "type": "group",
+        "layerId": "layer-1",
+        "lineColor": "#000000",
+        "lineWidth": 1,
+        "fill": "transparent",
+        "children": [
+          {
+            "id": "shape_2",
+            "type": "line",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x1": 1.2000000000000028,
+            "y1": 1,
+            "x2": 1.2000000000000028,
+            "y2": 2.25
+          },
+          {
+            "id": "shape_3",
+            "type": "circle",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "cx": 1.2000000000000028,
+            "cy": 2.8125,
+            "r": 0.59375
+          },
+          {
+            "id": "shape_4",
+            "type": "pin",
+            "layerId": "layer-1",
+            "lineColor": "#000000",
+            "lineWidth": 1,
+            "fill": "transparent",
+            "lineStyle": "solid",
+            "x": 1.2000000000000028,
+            "y": 1,
+            "tag": "R",
+            "tagX": 0,
+            "tagY": 7,
+            "tagFontSize": 4
+          }
+        ]
+      }
+    ],
+    "gridOffsetX": 1.2999999999999972,
+    "gridOffsetY": 1.5
+  }
+}

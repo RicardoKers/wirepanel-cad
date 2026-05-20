@@ -88,9 +88,15 @@ Latest local changes ready to commit
   - Selection transform actions moved from the Object properties panel to the selection context menu.
   - Context menu now exposes delete, rotate, mirror, align left/center/right/top/middle/bottom, group, ungroup, create component and move to layer. Alignment uses the selection bounds as reference.
   - Context menus now have compact viewport-aware width/height limits, roughly one third of the screen, with internal mouse-wheel scrolling to avoid running off-screen.
+  - Selection is now sanitized against visible/unlocked layers, so locked-layer objects are ignored by copy/cut/paste and selection actions even if they were previously selected.
+  - The visible grid is now drawn as an explicit SVG path on snap coordinates, avoiding the old pattern offset; grid stroke was increased for readability.
+  - New projects use `Projeto Elétrico` as the default project name, pin connection X markers are hidden by default, and new pin tag font size is 3.
+  - The left Library panel is 20px wider on desktop and medium layouts.
+  - Displayed component parts now calculate spacing from the real rotated/scaled symbol bounds, so rotated part references keep correct distances.
+  - Built-in component JSONs were refreshed in `src/library/components`.
   - File/upload/help/export actions remain functionally unchanged.
 - The author signature now reads `Kerschbaumer - IFC Luzerna - V. 0.1`.
-- These changes are ready to commit at the time this summary was updated.
+- These changes have been documented and are ready to commit/push at the time this summary was updated.
 
 Current application overview
 - Browser-based 2D CAD for industrial electrical drawings.

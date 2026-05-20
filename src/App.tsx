@@ -52,7 +52,7 @@ const initialPdfSettings: PdfSettings = {
   marginRightMm: 5,
   marginTopMm: 5,
   marginBottomMm: 5,
-  project: "Projeto Eletrico",
+  project: "Projeto Elétrico",
   drawing: "Diagrama",
   author: "Equipe"
 };
@@ -151,7 +151,7 @@ export default function App() {
   const [gridSize, setGridSize] = useState(2.5);
   const [gridColor, setGridColor] = useState("#e7edf5");
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [showPinConnection, setShowPinConnection] = useState(true);
+  const [showPinConnection, setShowPinConnection] = useState(false);
   const [placingComponentId, setPlacingComponentId] = useState<string | null>(null);
   const [fitToPageRequest, setFitToPageRequest] = useState(0);
   const [pdfSettings, setPdfSettings] = useState<PdfSettings>(initialPdfSettings);
@@ -189,7 +189,19 @@ export default function App() {
   );
 
   const shapes = activePage?.shapes ?? [];
-  const selection = selectionByPage[activePageId] ?? [];
+  const selectableLayerIds = useMemo(
+    () => new Set(layers.filter((layer) => layer.visible && !layer.locked).map((layer) => layer.id)),
+    [layers]
+  );
+  const selectableShapeIds = useMemo(
+    () => new Set(shapes.filter((shape) => selectableLayerIds.has(shape.layerId)).map((shape) => shape.id)),
+    [selectableLayerIds, shapes]
+  );
+  const rawSelection = selectionByPage[activePageId] ?? [];
+  const selection = useMemo(
+    () => rawSelection.filter((id, index) => selectableShapeIds.has(id) && rawSelection.indexOf(id) === index),
+    [rawSelection, selectableShapeIds]
+  );
   const getDefaultPageName = (index: number) => t("app.pageLabel", { number: index + 1 });
   const view = viewByPage[activePageId] ?? { scale: 1, offsetX: 0, offsetY: 0 };
   const shouldAutoFit = !viewByPage[activePageId];
@@ -718,6 +730,16 @@ export default function App() {
   }, [selection, activePageId]);
 
   useEffect(() => {
+    const cleanSelection = sanitizeSelection(rawSelection);
+    if (
+      cleanSelection.length !== rawSelection.length ||
+      cleanSelection.some((id, index) => id !== rawSelection[index])
+    ) {
+      setSelectionByPage((prev) => ({ ...prev, [activePageId]: cleanSelection }));
+    }
+  }, [activePageId, rawSelection, selectableShapeIds]);
+
+  useEffect(() => {
     const snapshot = buildSnapshot();
     if (isRestoringRef.current) {
       lastSerializedRef.current = JSON.stringify(snapshot);
@@ -767,8 +789,12 @@ export default function App() {
     }
   }
 
+  function sanitizeSelection(ids: string[]) {
+    return ids.filter((id, index) => selectableShapeIds.has(id) && ids.indexOf(id) === index);
+  }
+
   function setSelection(ids: string[]) {
-    setSelectionByPage((prev) => ({ ...prev, [activePageId]: ids }));
+    setSelectionByPage((prev) => ({ ...prev, [activePageId]: sanitizeSelection(ids) }));
   }
 
   function setView(nextView: ViewState) {
@@ -1468,7 +1494,7 @@ export default function App() {
           y: pos.y,
           tagX: tagPos.x,
           tagY: tagPos.y,
-          tagFontSize: Math.max(4, baseShape.tagFontSize * scaleAvg)
+          tagFontSize: Math.max(3, baseShape.tagFontSize * scaleAvg)
         };
       }
       if (baseShape.type === "group") {

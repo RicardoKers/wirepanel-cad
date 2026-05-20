@@ -229,6 +229,10 @@
           para selecionar apenas objetos totalmente contidos no ret&acirc;ngulo.
         </p>
         <p>
+          Objetos em camadas travadas ou ocultas s&atilde;o ignorados pela sele&ccedil;&atilde;o e pela &aacute;rea de
+          transfer&ecirc;ncia, mesmo que estivessem selecionados antes da camada ser travada.
+        </p>
+        <p>
           Clique com o bot&atilde;o direito em uma sele&ccedil;&atilde;o para acessar a&ccedil;&otilde;es CAD comuns, como excluir,
           rotacionar, espelhar, alinhar, agrupar, desagrupar, criar componente e mover para camada.
           O alinhamento usa a pr&oacute;pria sele&ccedil;&atilde;o como refer&ecirc;ncia.
@@ -330,7 +334,7 @@
         </p>
         <ul>
           <li>O componente principal pode mostrar suas partes acima, abaixo, &agrave; esquerda ou &agrave; direita.</li>
-          <li>O espa&ccedil;amento controla a dist&acirc;ncia entre as partes mostradas.</li>
+          <li>O espa&ccedil;amento controla a dist&acirc;ncia entre as partes mostradas usando o tamanho real do s&iacute;mbolo ap&oacute;s rota&ccedil;&atilde;o.</li>
           <li>O offset controla a dist&acirc;ncia entre o componente principal e a primeira parte mostrada.</li>
           <li>Offset X/Y e rota&ccedil;&atilde;o do endere&ccedil;o posicionam o texto de refer&ecirc;ncia ao lado de cada parte.</li>
           <li>Quando uma parte mostra o link do principal, o texto &eacute; sempre o endere&ccedil;o do componente principal. A posi&ccedil;&atilde;o X/Y e a rota&ccedil;&atilde;o podem ser editadas nas propriedades do Objeto.</li>
@@ -391,8 +395,8 @@
         <ul>
           <li><strong>Idioma</strong>: alterna entre portugu&ecirc;s do Brasil e ingl&ecirc;s.</li>
           <li><strong>PDF</strong>: nome do projeto, desenho, autor, folha, orienta&ccedil;&atilde;o e margens.</li>
-          <li><strong>Grade</strong>: habilitar snap e definir tamanho e cor da grade.</li>
-          <li><strong>Pinos</strong>: mostrar ou ocultar o marcador X de conex&atilde;o.</li>
+          <li><strong>Grade</strong>: habilitar snap e definir tamanho e cor da grade. A grade vis&iacute;vel usa as mesmas coordenadas do snap.</li>
+          <li><strong>Pinos</strong>: mostrar ou ocultar o marcador X de conex&atilde;o. Ele vem oculto por padr&atilde;o em novos projetos.</li>
         </ul>
         <p>A assinatura no canto inferior direito mostra <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>
