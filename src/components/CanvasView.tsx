@@ -433,11 +433,12 @@ export default function CanvasView({
     }
     if (shape.type === "pin") {
       const textWidth = shape.tag.length * (shape.tagFontSize * 0.6);
+      const textHalfHeight = shape.tagFontSize / 2;
       const tagBounds = {
         minX: shape.tagX,
-        minY: shape.tagY - shape.tagFontSize,
+        minY: shape.tagY - textHalfHeight,
         maxX: shape.tagX + textWidth,
-        maxY: shape.tagY
+        maxY: shape.tagY + textHalfHeight
       };
       const crossDistance = distance(point, { x: shape.x, y: shape.y });
       return Math.min(crossDistance, distanceToBounds(point, tagBounds));
@@ -725,9 +726,9 @@ export default function CanvasView({
         x: world.x,
         y: world.y,
         tag: t("app.newPin"),
-        tagX: world.x,
-        tagY: world.y,
-        tagFontSize: 3
+        tagX: world.x + 0.8,
+        tagY: world.y + 0.2,
+        tagFontSize: 2.5
       };
       onAddShape(pin);
       onSelect([pin.id]);
@@ -1147,11 +1148,16 @@ export default function CanvasView({
       }
     }
     if (placingComponentId && event.key === "Escape") {
+      event.preventDefault();
       onCancelPlacingComponent();
       onResetTool?.();
       return;
     }
     if (event.key === "Escape") {
+      event.preventDefault();
+      if (selection.length > 0) {
+        onSelect([]);
+      }
       onResetTool?.();
       return;
     }
@@ -1319,6 +1325,7 @@ export default function CanvasView({
           y={y}
           fontSize={instance.label.fontSize}
           textAnchor={instance.label.align === "center" ? "middle" : instance.label.align === "right" ? "end" : "start"}
+          dominantBaseline="middle"
           transform={instance.label.rotation ? `rotate(${instance.label.rotation} ${x} ${y})` : undefined}
           pointerEvents="none"
         >
@@ -1406,8 +1413,8 @@ export default function CanvasView({
       const bounds = linkedItem.bounds;
       const centerX = (bounds.minX + bounds.maxX) / 2;
       const centerY = (bounds.minY + bounds.maxY) / 2;
-      const textX = centerX + (instance.parentLinkOffsetX ?? (bounds.maxX - centerX + 3));
-      const textY = centerY + (instance.parentLinkOffsetY ?? (bounds.minY - centerY - 2));
+      const textX = centerX + (instance.parentLinkOffsetX ?? (bounds.minX - centerX - 2));
+      const textY = centerY + (instance.parentLinkOffsetY ?? 4);
       const textRotation = instance.parentLinkRotation ?? 0;
       const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
       const parentItem = parent ? getInstanceShapes(parent) : null;
@@ -1418,6 +1425,8 @@ export default function CanvasView({
           x={textX}
           y={textY}
           fontSize={3.2}
+          textAnchor="end"
+          dominantBaseline="middle"
           pointerEvents="all"
           transform={textRotation ? `rotate(${textRotation} ${textX} ${textY})` : undefined}
           onPointerDown={(event) =>
@@ -1836,12 +1845,13 @@ export default function CanvasView({
     if (shape.type === "pin") {
       const cross = 1;
       const textWidth = shape.tag.length * (shape.tagFontSize * 0.6);
+      const textHalfHeight = shape.tagFontSize / 2;
       const { strokeDasharray, strokeLinecap } = getLineStyleProps(shape.lineStyle);
       const tagBounds = {
         minX: shape.tagX,
-        minY: shape.tagY - shape.tagFontSize,
+        minY: shape.tagY - textHalfHeight,
         maxX: shape.tagX + textWidth,
-        maxY: shape.tagY
+        maxY: shape.tagY + textHalfHeight
       };
       return (
         <g key={shape.id}>
@@ -1911,6 +1921,7 @@ export default function CanvasView({
             fill={shape.lineColor}
             fontSize={shape.tagFontSize}
             fontFamily="Space Grotesk"
+            dominantBaseline="middle"
             pointerEvents={suppressPointer ? "none" : "all"}
             onPointerDown={(event) => handlePinTagPointerDown(event, shape)}
           >

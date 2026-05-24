@@ -439,7 +439,7 @@ export default function Toolbar({
         <div className="toolbar-group" aria-label={t("toolbar.groups.help")}>
           <div className="toolbar-button-group">{helpActions.map((action) => renderAction(action))}</div>
         </div>
-        <input ref={fileInputRef} type="file" accept="application/json" onChange={handleFilePick} hidden />
+        <input ref={fileInputRef} type="file" accept=".wpp" onChange={handleFilePick} hidden />
       </div>
     </header>
   );

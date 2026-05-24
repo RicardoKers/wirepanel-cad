@@ -149,7 +149,7 @@ export default function App() {
   const [tool, setTool] = useState<Tool>("select");
   const [viewByPage, setViewByPage] = useState<Record<string, ViewState>>({});
   const [gridSize, setGridSize] = useState(2.5);
-  const [gridColor, setGridColor] = useState("#e7edf5");
+  const [gridColor, setGridColor] = useState("#dcdcdc");
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [showPinConnection, setShowPinConnection] = useState(false);
   const [placingComponentId, setPlacingComponentId] = useState<string | null>(null);
@@ -714,6 +714,11 @@ export default function App() {
         setSelectionMenu(null);
         setPageMenu(null);
         setCreateComponentDialog(null);
+        setSelectionByPage((prev) => {
+          const currentSelection = prev[activePageId] ?? [];
+          if (currentSelection.length === 0) return prev;
+          return { ...prev, [activePageId]: [] };
+        });
       }
     }
 
@@ -723,7 +728,7 @@ export default function App() {
       window.removeEventListener("click", handleClick);
       window.removeEventListener("keydown", handleKey);
     };
-  }, []);
+  }, [activePageId]);
 
   useEffect(() => {
     setSelectionMenu(null);
@@ -1494,7 +1499,7 @@ export default function App() {
           y: pos.y,
           tagX: tagPos.x,
           tagY: tagPos.y,
-          tagFontSize: Math.max(3, baseShape.tagFontSize * scaleAvg)
+          tagFontSize: Math.max(2.5, baseShape.tagFontSize * scaleAvg)
         };
       }
       if (baseShape.type === "group") {
@@ -1784,7 +1789,7 @@ export default function App() {
     const link = document.createElement("a");
     link.href = url;
     const safeProjectName = pdfSettings.project.trim() || "cad-project";
-    const fileName = `${safeProjectName.replace(/[\\/:*?"<>|]/g, "-")}.json`;
+    const fileName = `${safeProjectName.replace(/[\\/:*?"<>|]/g, "-")}.wpp`;
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
@@ -1971,18 +1976,25 @@ export default function App() {
     return getNextComponentTagNumberFrom(prefix, componentInstances);
   }
 
-  function getDefaultComponentLabel(label?: ComponentLabel): ComponentLabel {
+  function getDefaultComponentLabel(label?: ComponentLabel, bounds?: Bounds): ComponentLabel {
     return label
       ? { ...label }
       : {
           visible: true,
           textMode: "tag",
-          offsetX: 6,
-          offsetY: -4,
+          offsetX: -2,
+          offsetY: bounds ? (bounds.maxY - bounds.minY) / 2 : 0,
           fontSize: 3.5,
-          align: "left",
+          align: "right",
           rotation: 0
         };
+  }
+
+  function getDefaultParentLinkOffsets(bounds: Bounds) {
+    return {
+      x: bounds.minX - (bounds.minX + bounds.maxX) / 2 - 2,
+      y: 4
+    };
   }
 
   function getDefaultPartsDisplay() {
@@ -2050,6 +2062,8 @@ export default function App() {
     const targetShape = targetPage?.shapes.find((shape) => shape.id === createComponentDialog.shapeId);
     if (!targetPage || !targetShape || targetShape.type !== "group") return;
     if (componentInstances.some((instance) => instance.shapeIds.includes(createComponentDialog.shapeId))) return;
+    const targetBounds = getShapeBounds(targetShape);
+    const parentLinkOffsets = getDefaultParentLinkOffsets(targetBounds);
 
     setComponentInstances((prev) =>
       normalizePartTags([
@@ -2065,13 +2079,13 @@ export default function App() {
             ? getNextPartOrder(parentComponent.componentId, prev)
             : undefined,
           showParentLink: Boolean(parentComponent),
-          parentLinkOffsetX: 6,
-          parentLinkOffsetY: -2,
+          parentLinkOffsetX: parentComponent ? parentLinkOffsets.x : undefined,
+          parentLinkOffsetY: parentComponent ? parentLinkOffsets.y : undefined,
           parentLinkRotation: 0,
           partsDisplay: getDefaultPartsDisplay(),
           pageId: createComponentDialog.pageId,
           shapeIds: [createComponentDialog.shapeId],
-          label: getDefaultComponentLabel()
+          label: getDefaultComponentLabel(undefined, targetBounds)
         }
       ])
     );
@@ -2117,12 +2131,12 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${fileName}.json`;
+      link.download = `${fileName}.wpm`;
       link.click();
       URL.revokeObjectURL(url);
       setComponentLibraryMessage({
         kind: "success",
-        message: t("components.exportSuccess", { fileName: `${fileName}.json` })
+        message: t("components.exportSuccess", { fileName: `${fileName}.wpm` })
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : t("components.exportFailed");
@@ -2310,6 +2324,10 @@ export default function App() {
     updateActivePageShapes((prev) => [...prev, ...newShapes]);
     const tagPrefix = component.defaultTagPrefix?.trim().toUpperCase();
     if (tagPrefix) {
+      const componentBounds = newShapes
+        .map((shape) => getShapeBounds(shape))
+        .reduce((acc, item) => mergeBounds(acc, item));
+      const parentLinkOffsets = getDefaultParentLinkOffsets(componentBounds);
       setComponentInstances((prev) => [
         ...prev,
         {
@@ -2320,12 +2338,12 @@ export default function App() {
           type: component.defaultComponentType?.trim() || component.name || t("app.componentDefaultType"),
           partsDisplay: getDefaultPartsDisplay(),
           showParentLink: component.defaultShowParentLink,
-          parentLinkOffsetX: component.defaultParentLinkOffsetX,
-          parentLinkOffsetY: component.defaultParentLinkOffsetY,
+          parentLinkOffsetX: component.defaultParentLinkOffsetX ?? parentLinkOffsets.x,
+          parentLinkOffsetY: component.defaultParentLinkOffsetY ?? parentLinkOffsets.y,
           parentLinkRotation: component.defaultParentLinkRotation,
           pageId: activePageId,
           shapeIds: newShapes.map((shape) => shape.id),
-          label: getDefaultComponentLabel(component.defaultLabel)
+          label: getDefaultComponentLabel(component.defaultLabel, componentBounds)
         }
       ]);
     }
@@ -2725,7 +2743,7 @@ export default function App() {
           }
           pdf.setTextColor(shape.lineColor);
           pdf.setFontSize(Math.max(1, shape.tagFontSize * mmToPt));
-          pdf.text(shape.tag, mapX(shape.tagX), mapY(shape.tagY));
+          pdf.text(shape.tag, mapX(shape.tagX), mapY(shape.tagY), { baseline: "middle" });
         }
         setPdfLineDash([], 0);
         pdf.setLineCap(0);

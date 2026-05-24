@@ -88,10 +88,11 @@ export function getShapeBounds(shape: Shape): Bounds {
     case "pin": {
       const cross = 1;
       const textWidth = shape.tag.length * (shape.tagFontSize * 0.6);
+      const textHalfHeight = shape.tagFontSize / 2;
       const minX = Math.min(shape.x - cross, shape.tagX);
-      const minY = Math.min(shape.y - cross, shape.tagY - shape.tagFontSize);
+      const minY = Math.min(shape.y - cross, shape.tagY - textHalfHeight);
       const maxX = Math.max(shape.x + cross, shape.tagX + textWidth);
-      const maxY = Math.max(shape.y + cross, shape.tagY);
+      const maxY = Math.max(shape.y + cross, shape.tagY + textHalfHeight);
       return { minX, minY, maxX, maxY };
     }
     case "group": {

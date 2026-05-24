@@ -90,7 +90,12 @@ Latest local changes ready to commit
   - Context menus now have compact viewport-aware width/height limits, roughly one third of the screen, with internal mouse-wheel scrolling to avoid running off-screen.
   - Selection is now sanitized against visible/unlocked layers, so locked-layer objects are ignored by copy/cut/paste and selection actions even if they were previously selected.
   - The visible grid is now drawn as an explicit SVG path on snap coordinates, avoiding the old pattern offset; grid stroke was increased for readability.
-  - New projects use `Projeto Elétrico` as the default project name, pin connection X markers are hidden by default, and new pin tag font size is 3.
+  - New projects use `Projeto Elétrico` as the default project name and pin connection X markers are hidden by default.
+  - New pin labels default to font size 2.5, are placed 0.8mm to the right and 0.2mm below the pin connection center, and use middle vertical alignment in canvas/PDF/bounds.
+  - New component labels default to the left side of the component, right-aligned and vertically centered; subcomponent parent-address links default below that label, also right-aligned.
+  - Default grid color is now `#dcdcdc` (RGB 220/220/220).
+  - Pressing Escape now clears the current selection; it still cancels placement/menus/dialogs as before.
+  - Project downloads/imports now use `.wpp` (WirePanel Project) and project template/model downloads/imports now use `.wpm` (WirePanel Model); user-facing `.json` import support was removed to avoid confusion.
   - The left Library panel is 20px wider on desktop and medium layouts.
   - Displayed component parts now calculate spacing from the real rotated/scaled symbol bounds, so rotated part references keep correct distances.
   - Built-in component JSONs were refreshed in `src/library/components`.

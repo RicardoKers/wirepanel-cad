@@ -349,8 +349,8 @@ export default function PropertiesPanel({
                       updateSelectedComponent((instance) => ({
                         ...instance,
                         showParentLink: event.target.checked,
-                        parentLinkOffsetX: instance.parentLinkOffsetX ?? 6,
-                        parentLinkOffsetY: instance.parentLinkOffsetY ?? -2,
+                        parentLinkOffsetX: instance.parentLinkOffsetX ?? -6,
+                        parentLinkOffsetY: instance.parentLinkOffsetY ?? 4,
                         parentLinkRotation: instance.parentLinkRotation ?? 0
                       }))
                     }
@@ -363,7 +363,7 @@ export default function PropertiesPanel({
                       <input
                         type="number"
                         step={0.5}
-                        value={selectedComponentInstance.parentLinkOffsetX ?? 6}
+                        value={selectedComponentInstance.parentLinkOffsetX ?? -6}
                         onChange={(event) =>
                           updateSelectedComponent((instance) => ({
                             ...instance,
@@ -377,7 +377,7 @@ export default function PropertiesPanel({
                       <input
                         type="number"
                         step={0.5}
-                        value={selectedComponentInstance.parentLinkOffsetY ?? -2}
+                        value={selectedComponentInstance.parentLinkOffsetY ?? 4}
                         onChange={(event) =>
                           updateSelectedComponent((instance) => ({
                             ...instance,
@@ -718,7 +718,7 @@ export default function PropertiesPanel({
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagY: Number(event.target.value) }))
                 } /></label>
                 <label className="row">{t("properties.tagSize")}<input type="number" value={selectedShape.tagFontSize} onChange={(event) =>
-                  onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagFontSize: Number(event.target.value) || 4 }))
+                  onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagFontSize: Number(event.target.value) || 2.5 }))
                 } /></label>
               </>
             )}

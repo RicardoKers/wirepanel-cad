@@ -562,7 +562,7 @@ export default function ComponentsPanel({
             ref={importInputRef}
             className="visually-hidden"
             type="file"
-            accept="application/json,.json"
+            accept=".wpm"
             onChange={handleImportInputChange}
           />
         </div>
