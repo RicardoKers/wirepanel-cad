@@ -82,6 +82,54 @@ function mergeBounds(a: Bounds, b: Bounds): Bounds {
   };
 }
 
+function findShapeById(items: Shape[], id: string): Shape | null {
+  for (const shape of items) {
+    if (shape.id === id) return shape;
+    if (shape.type === "group") {
+      const child = findShapeById(shape.children, id);
+      if (child) return child;
+    }
+  }
+  return null;
+}
+
+function collectShapeIds(items: Shape[], shouldInclude: (shape: Shape) => boolean): string[] {
+  return items.flatMap((shape) => {
+    const ownId = shouldInclude(shape) ? [shape.id] : [];
+    if (shape.type !== "group") return ownId;
+    return [...ownId, ...collectShapeIds(shape.children, shouldInclude)];
+  });
+}
+
+function updateShapeById(items: Shape[], id: string, updater: (shape: Shape) => Shape): Shape[] {
+  return items.map((shape) => {
+    if (shape.id === id) return updater(shape);
+    if (shape.type === "group") {
+      return { ...shape, children: updateShapeById(shape.children, id, updater) };
+    }
+    return shape;
+  });
+}
+
+function translateSelectedShapes(items: Shape[], selection: Set<string>, dx: number, dy: number): Shape[] {
+  return items.map((shape) => {
+    if (selection.has(shape.id)) return translateShape(shape, dx, dy);
+    if (shape.type === "group") {
+      return { ...shape, children: translateSelectedShapes(shape.children, selection, dx, dy) };
+    }
+    return shape;
+  });
+}
+
+function deleteSelectedShapes(items: Shape[], selection: Set<string>): Shape[] {
+  return items
+    .filter((shape) => !selection.has(shape.id))
+    .map((shape) => {
+      if (shape.type !== "group") return shape;
+      return { ...shape, children: deleteSelectedShapes(shape.children, selection) };
+    });
+}
+
 type PotentialLinkTarget = {
   address: string;
   pageIndex: number;
@@ -153,6 +201,7 @@ export default function App() {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [showPinConnection, setShowPinConnection] = useState(false);
   const [placingComponentId, setPlacingComponentId] = useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [fitToPageRequest, setFitToPageRequest] = useState(0);
   const [pdfSettings, setPdfSettings] = useState<PdfSettings>(initialPdfSettings);
   const [componentLibraryMessage, setComponentLibraryMessage] = useState<{ kind: "success" | "error"; message: string } | null>(null);
@@ -193,9 +242,19 @@ export default function App() {
     () => new Set(layers.filter((layer) => layer.visible && !layer.locked).map((layer) => layer.id)),
     [layers]
   );
+  const editingGroup = useMemo(() => {
+    if (!editingGroupId) return null;
+    const shape = findShapeById(shapes, editingGroupId);
+    return shape?.type === "group" ? shape : null;
+  }, [editingGroupId, shapes]);
   const selectableShapeIds = useMemo(
-    () => new Set(shapes.filter((shape) => selectableLayerIds.has(shape.layerId)).map((shape) => shape.id)),
-    [selectableLayerIds, shapes]
+    () =>
+      new Set(
+        editingGroup
+          ? collectShapeIds(editingGroup.children, (shape) => selectableLayerIds.has(shape.layerId))
+          : shapes.filter((shape) => selectableLayerIds.has(shape.layerId)).map((shape) => shape.id)
+      ),
+    [editingGroup, selectableLayerIds, shapes]
   );
   const rawSelection = selectionByPage[activePageId] ?? [];
   const selection = useMemo(
@@ -545,7 +604,7 @@ export default function App() {
 
   const selectedShape = useMemo(() => {
     if (selection.length !== 1) return null;
-    return shapes.find((shape) => shape.id === selection[0]) ?? null;
+    return findShapeById(shapes, selection[0]);
   }, [selection, shapes]);
   const selectedComponentInstance = useMemo(() => {
     if (!selectedShape) return null;
@@ -610,12 +669,14 @@ export default function App() {
         .sort((a, b) => a.tag.localeCompare(b.tag, undefined, { numeric: true })),
     [componentInstances]
   );
-  const canGroupSelection = selection.length > 1;
-  const canUngroupSelection = selection.length === 1 && selectedShape?.type === "group";
+  const isEditingGroup = Boolean(editingGroup);
+  const canGroupSelection = !isEditingGroup && selection.length > 1;
+  const canUngroupSelection = !isEditingGroup && selection.length === 1 && selectedShape?.type === "group";
   const canMoveSelection = selection.length > 0;
-  const canAlignSelection = selection.length > 1;
-  const canTransformSelection = selection.length > 0;
+  const canAlignSelection = !isEditingGroup && selection.length > 1;
+  const canTransformSelection = !isEditingGroup && selection.length > 0;
   const canCreateComponentInstance =
+    !isEditingGroup &&
     selection.length === 1 &&
     selectedShape?.type === "group" &&
     !componentInstances.some((instance) => instance.shapeIds.includes(selectedShape.id));
@@ -714,6 +775,7 @@ export default function App() {
         setSelectionMenu(null);
         setPageMenu(null);
         setCreateComponentDialog(null);
+        setEditingGroupId(null);
         setSelectionByPage((prev) => {
           const currentSelection = prev[activePageId] ?? [];
           if (currentSelection.length === 0) return prev;
@@ -743,6 +805,12 @@ export default function App() {
       setSelectionByPage((prev) => ({ ...prev, [activePageId]: cleanSelection }));
     }
   }, [activePageId, rawSelection, selectableShapeIds]);
+
+  useEffect(() => {
+    if (editingGroupId && !editingGroup) {
+      setEditingGroupId(null);
+    }
+  }, [editingGroup, editingGroupId]);
 
   useEffect(() => {
     const snapshot = buildSnapshot();
@@ -1207,7 +1275,7 @@ export default function App() {
   }
 
   function updateShape(id: string, updater: (shape: Shape) => Shape) {
-    updateActivePageShapes((prev) => prev.map((shape) => (shape.id === id ? updater(shape) : shape)));
+    updateActivePageShapes((prev) => updateShapeById(prev, id, updater));
   }
 
   function extractPotentialShared(shape: Shape): PotentialSharedChanges {
@@ -1393,9 +1461,8 @@ export default function App() {
 
   function moveSelection(dx: number, dy: number) {
     if (selection.length === 0) return;
-    updateActivePageShapes((prev) =>
-      prev.map((shape) => (selection.includes(shape.id) ? translateShape(shape, dx, dy) : shape))
-    );
+    const selectedIds = new Set(selection);
+    updateActivePageShapes((prev) => translateSelectedShapes(prev, selectedIds, dx, dy));
   }
 
   function alignSelection(mode: AlignMode) {
@@ -2146,8 +2213,9 @@ export default function App() {
 
   function handleDeleteSelection() {
     if (selection.length === 0) return;
-    updateActivePageShapes((prev) => prev.filter((shape) => !selection.includes(shape.id)));
-    removeComponentInstancesForShapeIds(selection);
+    const selectedIds = new Set(selection);
+    updateActivePageShapes((prev) => deleteSelectedShapes(prev, selectedIds));
+    removeComponentInstancesForShapeIds(shapes.filter((shape) => selectedIds.has(shape.id)).map((shape) => shape.id));
     setSelection([]);
   }
 
@@ -2821,6 +2889,7 @@ export default function App() {
           totalPages={pages.length}
           pageId={activePageId}
           placingComponentId={placingComponentId}
+          editingGroupId={editingGroupId}
           componentInstances={componentInstances}
           nextPotentialNumber={nextPotentialNumber}
           potentialRender={potentialRender}
@@ -2833,6 +2902,16 @@ export default function App() {
           }}
           onMoveEnd={handleMoveEnd}
           onSelect={setSelection}
+          onEnterGroupEdit={(groupId) => {
+            setEditingGroupId(groupId);
+            setSelection([]);
+            setSelectionMenu(null);
+          }}
+          onExitGroupEdit={() => {
+            setEditingGroupId(null);
+            setSelection([]);
+            setSelectionMenu(null);
+          }}
           onPlaceComponentAt={handlePlaceComponentAt}
           onCancelPlacingComponent={() => setPlacingComponentId(null)}
           onDeleteSelection={handleDeleteSelection}

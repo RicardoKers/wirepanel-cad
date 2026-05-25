@@ -223,6 +223,10 @@
           <li><strong>Pan</strong>: navigate the canvas without editing geometry.</li>
         </ul>
         <p>
+          New pins use the default tag <code>X</code>. The tag text is small, slightly offset from the
+          connection point and vertically centered for compact terminal symbols.
+        </p>
+        <p>
           Multi-selection can be done with a selection rectangle. Hold <code>Alt</code> while dragging
           to select only objects fully contained by the rectangle.
         </p>
@@ -234,6 +238,11 @@
           Right-click a selection to access common CAD actions such as delete, rotate, mirror, align,
           group, ungroup, create component and move to layer. Alignment uses the current selection as
           the reference bounds.
+        </p>
+        <p>
+          Double-click a group or component body to edit its internal shapes without ungrouping it.
+          In this mode, internal lines, text and pins can be selected and edited normally from the
+          Object panel. Press <code>Esc</code> to leave group edit mode.
         </p>
       </section>
 
@@ -356,7 +365,7 @@
             <tr>
               <td>App Templates</td>
               <td>Built-in reusable models bundled with the application.</td>
-              <td>JSON files in <code>src/library/components</code> before the build.</td>
+              <td>Source files in <code>src/library/components</code> before the build.</td>
             </tr>
             <tr>
               <td>Project Templates</td>
@@ -396,6 +405,7 @@
           <li><strong>PDF</strong>: project name, drawing name, author, sheet, orientation and margins.</li>
           <li><strong>Grid</strong>: enable snap and set grid size and color. The visible grid is drawn on the same coordinates used by snap.</li>
           <li><strong>Pins</strong>: show or hide the connection X marker. It is hidden by default for new projects.</li>
+          <li><strong>Files</strong>: projects use <code>.wpp</code>; reusable models use <code>.wpm</code>.</li>
         </ul>
         <p>The lower-right signature shows <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>
@@ -416,7 +426,7 @@
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Cut selection</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td><td>Paste</td></tr>
             <tr><td><span class="kbd">Delete</span> or <span class="kbd">Backspace</span></td><td>Delete selection</td></tr>
-            <tr><td><span class="kbd">Esc</span></td><td>Cancel the current action or leave placement mode</td></tr>
+            <tr><td><span class="kbd">Esc</span></td><td>Clear selection, cancel the current action, leave placement mode or exit group edit mode</td></tr>
             <tr><td>Arrow keys</td><td>Move the selection by the grid step or by 1 unit</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + click</td><td>Open text, potential or component reference links</td></tr>
           </tbody>

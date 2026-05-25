@@ -254,7 +254,7 @@ export const resources = {
         structureSelection: "Structure",
         exportFilename: "cad-export.pdf",
         newText: "Text",
-        newPin: "Pin"
+        newPin: "X"
       }
     }
   },
@@ -509,7 +509,7 @@ export const resources = {
         structureSelection: "Estrutura",
         exportFilename: "cad-export.pdf",
         newText: "Texto",
-        newPin: "Pino"
+        newPin: "X"
       }
     }
   }

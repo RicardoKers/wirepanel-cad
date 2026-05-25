@@ -1,5 +1,5 @@
 WirePanel CAD - project handoff and next work plan
-Updated: 2026-05-18
+Updated: 2026-05-24
 
 Project
 - Local path: d:\06_Temporary\wirepanel-cad\wirepanel-cad
@@ -67,7 +67,7 @@ Latest local changes ready to commit
   - Right inspector navigation was compacted vertically with smaller rows and icons.
   - Object/properties rows and sections were tightened to reduce vertical scrolling.
   - The Library save action is now a compact `+` button in the Library header.
-  - The Library header also has a compact import button for project template JSON files.
+  - The Library header also has a compact import button for project template `.wpm` files.
   - Library templates are grouped by component type, with collapsible groups for App and Project templates.
   - Component JSON export no longer asks for category; internal `category` is filled from the component type.
   - Import/export feedback now appears in a small OK modal instead of inline text inside the Library panel.
@@ -94,11 +94,12 @@ Latest local changes ready to commit
   - New pin labels default to font size 2.5, are placed 0.8mm to the right and 0.2mm below the pin connection center, and use middle vertical alignment in canvas/PDF/bounds.
   - New component labels default to the left side of the component, right-aligned and vertically centered; subcomponent parent-address links default below that label, also right-aligned.
   - Default grid color is now `#dcdcdc` (RGB 220/220/220).
-  - Pressing Escape now clears the current selection; it still cancels placement/menus/dialogs as before.
+- Pressing Escape now clears the current selection; it still cancels placement/menus/dialogs as before.
+- Double-clicking a group/component body now enters group edit mode. Internal child shapes can be selected, moved with arrows/drag, and edited in Object properties without ungrouping. Pressing Escape exits group edit mode.
   - Project downloads/imports now use `.wpp` (WirePanel Project) and project template/model downloads/imports now use `.wpm` (WirePanel Model); user-facing `.json` import support was removed to avoid confusion.
   - The left Library panel is 20px wider on desktop and medium layouts.
   - Displayed component parts now calculate spacing from the real rotated/scaled symbol bounds, so rotated part references keep correct distances.
-  - Built-in component JSONs were refreshed in `src/library/components`.
+  - Built-in component source files now use `.wpm` in `src/library/components`.
   - File/upload/help/export actions remain functionally unchanged.
 - The author signature now reads `Kerschbaumer - IFC Luzerna - V. 0.1`.
 - These changes have been documented and are ready to commit/push at the time this summary was updated.
@@ -107,7 +108,7 @@ Current application overview
 - Browser-based 2D CAD for industrial electrical drawings.
 - Built with React, TypeScript, Vite, jsPDF, i18next and react-i18next.
 - The app is client-side only.
-- Project save/load is handled through JSON file download/upload.
+- Project save/load is handled through `.wpp` file download/upload.
 - PDF export runs in the browser and now includes visible component labels.
 - Built-in component library is bundled at build time.
 
@@ -123,6 +124,7 @@ Important files
   - Canvas rendering and user interaction.
   - Selection, dragging, resizing, drawing tools, snapping, fit-to-page behavior.
   - Shape rendering for SVG canvas.
+  - Group edit mode: double-click a group/component body to expose internal shapes for selection and property editing; Esc exits the mode.
 - src/components/ComponentsPanel.tsx
   - Left Library panel.
   - App templates and project templates.
@@ -142,9 +144,9 @@ Important files
 - src/models.ts
   - Core data model types.
 - src/utils/components.ts
-  - Component creation, placement, JSON export helpers and component file validation.
+  - Component creation, placement, `.wpm` export helpers and component file validation.
 - src/library/index.ts
-  - Loads bundled JSON components from src/library/components/*.json.
+  - Loads bundled component models from src/library/components/*.wpm.
 - src/i18n/resources.ts
   - English and Brazilian Portuguese UI strings.
 - src/styles.css
@@ -215,7 +217,7 @@ Terminology and ergonomics direction
   - App Templates / Modelos do app.
   - Project Templates / Modelos do projeto.
   - Save selection as template / Salvar seleção como modelo.
-  - Download template JSON / Baixar modelo JSON.
+  - Download template WPM / Baixar modelo WPM.
 - The right panel should focus on inspection/management:
   - Object / Objeto.
   - Components / Componentes.
@@ -249,7 +251,7 @@ Copy/paste and intelligent template status
   - The pasted copy receives a new shape id or ids, a new component instance id and the next sequential tag number for the same prefix.
   - The pasted copy intentionally clears `partOfId` and `partOfTag`.
   - Saving a project template from a selected intelligent component stores `defaultTagPrefix`, `defaultComponentType` and `defaultLabel`.
-  - Downloaded template JSON also preserves those defaults.
+  - Downloaded template `.wpm` also preserves those defaults.
   - Inserting a project/app template with `defaultTagPrefix` creates an intelligent component instance immediately.
   - Inserting a template without `defaultTagPrefix` remains a graphical insertion only.
 - Verification:
@@ -264,7 +266,7 @@ Copy/paste and intelligent template status
   - Save K1 as a template in the Library.
   - Insert that saved template from the Library.
   - Confirm the inserted template creates the next K number automatically.
-  - Download the template JSON and confirm it contains `defaultTagPrefix`.
+  - Download the template `.wpm` and confirm it contains `defaultTagPrefix`.
 
 Cross-reference planning
 - Goal:
@@ -713,7 +715,7 @@ Phase 10 - Library/template integration
   - defaultType
   - defaultTagPrefix
   - defaultLabel
-- Keep old JSON components compatible.
+- Built-in component files now use `.wpm`; old built-in `.json` component source files are no longer part of the target workflow.
 - Tests:
   - Place existing built-in components.
   - Confirm old library files still load.
@@ -746,6 +748,14 @@ Testing policy for this work
   10. Reload project JSON.
   11. Export PDF.
   12. Confirm tags, relationships and labels remain correct.
+- Group edit mode manual test:
+  1. Draw a symbol with lines, text and at least one pin.
+  2. Group the symbol and optionally create an intelligent component from the group.
+  3. Double-click the group/component body.
+  4. Confirm the group receives the blue edit outline and internal lines/texts/pins can be selected individually.
+  5. Select an internal text or pin and edit its value/position in Object properties.
+  6. Press Escape and confirm selection returns to normal page-level behavior.
+  7. Save as `.wpp`, reload, and confirm internal edits persisted.
 
 Risks and implementation notes
 - Existing project import is intentionally strict. `componentInstances` is now required for the new format.

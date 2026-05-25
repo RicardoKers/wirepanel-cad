@@ -225,6 +225,10 @@
           <li><strong>Pan</strong>: navegar pelo canvas sem editar a geometria.</li>
         </ul>
         <p>
+          Novos pinos usam a tag padr&atilde;o <code>X</code>. O texto da tag &eacute; pequeno, levemente
+          deslocado do ponto de conex&atilde;o e centralizado verticalmente para s&iacute;mbolos de borne compactos.
+        </p>
+        <p>
           A sele&ccedil;&atilde;o m&uacute;ltipla pode ser feita por ret&acirc;ngulo. Segure <code>Alt</code> ao arrastar
           para selecionar apenas objetos totalmente contidos no ret&acirc;ngulo.
         </p>
@@ -236,6 +240,11 @@
           Clique com o bot&atilde;o direito em uma sele&ccedil;&atilde;o para acessar a&ccedil;&otilde;es CAD comuns, como excluir,
           rotacionar, espelhar, alinhar, agrupar, desagrupar, criar componente e mover para camada.
           O alinhamento usa a pr&oacute;pria sele&ccedil;&atilde;o como refer&ecirc;ncia.
+        </p>
+        <p>
+          D&ecirc; duplo clique em um grupo ou no corpo de um componente para editar suas formas internas
+          sem desagrupar. Neste modo, linhas, textos e pinos internos podem ser selecionados e editados
+          normalmente pelo painel Objeto. Pressione <code>Esc</code> para sair da edi&ccedil;&atilde;o do grupo.
         </p>
       </section>
 
@@ -357,7 +366,7 @@
             <tr>
               <td>Modelos do App</td>
               <td>Modelos reutiliz&aacute;veis nativos, inclu&iacute;dos com a aplica&ccedil;&atilde;o.</td>
-              <td>Arquivos JSON em <code>src/library/components</code> antes do build.</td>
+              <td>Arquivos fonte em <code>src/library/components</code> antes do build.</td>
             </tr>
             <tr>
               <td>Modelos do Projeto</td>
@@ -397,6 +406,7 @@
           <li><strong>PDF</strong>: nome do projeto, desenho, autor, folha, orienta&ccedil;&atilde;o e margens.</li>
           <li><strong>Grade</strong>: habilitar snap e definir tamanho e cor da grade. A grade vis&iacute;vel usa as mesmas coordenadas do snap.</li>
           <li><strong>Pinos</strong>: mostrar ou ocultar o marcador X de conex&atilde;o. Ele vem oculto por padr&atilde;o em novos projetos.</li>
+          <li><strong>Arquivos</strong>: projetos usam <code>.wpp</code>; modelos reutiliz&aacute;veis usam <code>.wpm</code>.</li>
         </ul>
         <p>A assinatura no canto inferior direito mostra <strong>Kerschbaumer - IFC Luzerna - V. 0.1</strong>.</p>
       </section>
@@ -417,7 +427,7 @@
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">X</span></td><td>Recortar sele&ccedil;&atilde;o</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">V</span></td><td>Colar</td></tr>
             <tr><td><span class="kbd">Delete</span> ou <span class="kbd">Backspace</span></td><td>Excluir sele&ccedil;&atilde;o</td></tr>
-            <tr><td><span class="kbd">Esc</span></td><td>Cancelar a a&ccedil;&atilde;o atual ou sair do modo de inser&ccedil;&atilde;o</td></tr>
+            <tr><td><span class="kbd">Esc</span></td><td>Limpar sele&ccedil;&atilde;o, cancelar a a&ccedil;&atilde;o atual, sair do modo de inser&ccedil;&atilde;o ou sair da edi&ccedil;&atilde;o de grupo</td></tr>
             <tr><td>Setas do teclado</td><td>Mover a sele&ccedil;&atilde;o pelo passo da grade ou por 1 unidade</td></tr>
             <tr><td><span class="kbd">Ctrl</span> + clique</td><td>Abrir links de texto, potencial ou refer&ecirc;ncia de componente</td></tr>
           </tbody>

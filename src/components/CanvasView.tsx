@@ -27,6 +27,8 @@ const potentialArrowLabelGap = 1;
 const potentialArrowLabelShift = 3;
 const pinConnectionTolerance = 0.8;
 const selectionProximityPx = 6;
+const pinSelectionProximityPx = 2;
+const pinTagSelectionProximityPx = 1;
 const selectionCyclePointPx = 8;
 const textSelectionProximityPx = 1;
 const textSelectionProximityMm = 0.6;
@@ -52,6 +54,7 @@ type CanvasViewProps = {
   totalPages: number;
   pageId: string;
   placingComponentId: string | null;
+  editingGroupId: string | null;
   componentInstances: ComponentInstance[];
   nextPotentialNumber: number;
   potentialRender?: Record<string, PotentialRenderInfo>;
@@ -62,6 +65,8 @@ type CanvasViewProps = {
   onMoveStart?: () => void;
   onMoveEnd?: () => void;
   onSelect: (ids: string[]) => void;
+  onEnterGroupEdit?: (groupId: string) => void;
+  onExitGroupEdit?: () => void;
   onPlaceComponentAt: (componentId: string, x: number, y: number) => void;
   onCancelPlacingComponent: () => void;
   onDeleteSelection: () => void;
@@ -240,6 +245,7 @@ export default function CanvasView({
   totalPages,
   pageId,
   placingComponentId,
+  editingGroupId,
   componentInstances,
   nextPotentialNumber,
   potentialRender,
@@ -250,6 +256,8 @@ export default function CanvasView({
   onMoveStart,
   onMoveEnd,
   onSelect,
+  onEnterGroupEdit,
+  onExitGroupEdit,
   onPlaceComponentAt,
   onCancelPlacingComponent,
   onDeleteSelection,
@@ -282,6 +290,7 @@ export default function CanvasView({
   const panStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const lastPointerRef = useRef<Point>(emptyPoint);
   const selectionCycleRef = useRef<{ point: Point; candidateIds: string[]; index: number } | null>(null);
+  const groupClickRef = useRef<{ id: string; time: number } | null>(null);
   const tagDragRef = useRef<{ id: string; last: Point } | null>(null);
   const lastFitToPageRequestRef = useRef(0);
   const endpointDragRef = useRef<{
@@ -322,7 +331,45 @@ export default function CanvasView({
     return selectableLayerIds.has(shape.layerId);
   }
 
-  const selectedShapes = useMemo(() => shapes.filter((shape) => selection.includes(shape.id)), [selection, shapes]);
+  function findShapeById(items: Shape[], id: string): Shape | null {
+    for (const shape of items) {
+      if (shape.id === id) return shape;
+      if (shape.type === "group") {
+        const child = findShapeById(shape.children, id);
+        if (child) return child;
+      }
+    }
+    return null;
+  }
+
+  function flattenShapes(items: Shape[]): Shape[] {
+    return items.flatMap((shape) => {
+      if (shape.type !== "group") return [shape];
+      return [shape, ...flattenShapes(shape.children)];
+    });
+  }
+
+  function shapeContainsId(shape: Shape, id: string): boolean {
+    if (shape.id === id) return true;
+    if (shape.type !== "group") return false;
+    return shape.children.some((child) => shapeContainsId(child, id));
+  }
+
+  const editingGroup = useMemo(() => {
+    if (!editingGroupId) return null;
+    const shape = findShapeById(shapes, editingGroupId);
+    return shape?.type === "group" ? shape : null;
+  }, [editingGroupId, shapes]);
+
+  const interactionShapes = useMemo(
+    () => (editingGroup ? flattenShapes(editingGroup.children) : shapes),
+    [editingGroup, shapes]
+  );
+
+  const selectedShapes = useMemo(
+    () => selection.map((id) => findShapeById(interactionShapes, id)).filter((shape): shape is Shape => Boolean(shape)),
+    [selection, interactionShapes]
+  );
 
   const selectionBounds = useMemo(() => {
     if (selectedShapes.length === 0) return null;
@@ -457,11 +504,12 @@ export default function CanvasView({
     const textThreshold = Math.min(textSelectionProximityPx / view.scale, textSelectionProximityMm);
     const candidates: ShapeHitCandidate[] = [];
 
-    shapes.forEach((shape) => {
+    interactionShapes.forEach((shape) => {
       if (!isShapeVisible(shape) || !isShapeSelectable(shape)) return;
       if (shape.type === "text" && !includeText) return;
       const dist = getShapeDistance(shape, point);
-      const allowedDistance = shape.type === "text" ? textThreshold : threshold;
+      const pinThreshold = Math.min(pinSelectionProximityPx / view.scale, 0.5);
+      const allowedDistance = shape.type === "text" ? textThreshold : shape.type === "pin" ? pinThreshold : threshold;
       if (dist <= allowedDistance) {
         candidates.push({ shape, distance: dist, priority: getShapeHitPriority(shape) });
       }
@@ -554,6 +602,21 @@ export default function CanvasView({
     dragPointRef.current = point;
     setIsDragging(true);
     onMoveStart?.();
+  }
+
+  function shouldEnterGroupEdit(shape: Shape) {
+    if (shape.type !== "group" || editingGroupId) {
+      groupClickRef.current = null;
+      return false;
+    }
+    const now = window.performance.now();
+    const previous = groupClickRef.current;
+    groupClickRef.current = { id: shape.id, time: now };
+    if (previous?.id === shape.id && now - previous.time <= 500) {
+      groupClickRef.current = null;
+      return true;
+    }
+    return false;
   }
 
   function getResizedBounds(state: ResizeState, point: Point): Bounds {
@@ -936,7 +999,7 @@ export default function CanvasView({
       const height = maxY - minY;
 
       if (width > 2 || height > 2) {
-        const inside = shapes
+        const inside = interactionShapes
           .filter((shape) => isShapeSelectable(shape))
           .filter((shape) => {
             const bounds = getShapeBounds(shape);
@@ -1000,6 +1063,10 @@ export default function CanvasView({
   function handleSelectionBoundsPointerDown(event: ReactPointerEvent<SVGRectElement>) {
     if (tool !== "select") return;
     event.stopPropagation();
+    if (selectedShapes.length === 1 && shouldEnterGroupEdit(selectedShapes[0])) {
+      onEnterGroupEdit?.(selectedShapes[0].id);
+      return;
+    }
     const world = snapPoint(getWorldPoint(event));
     startDrag(world);
   }
@@ -1018,6 +1085,10 @@ export default function CanvasView({
     const world = snapPoint(rawWorld);
     const target = force ? shape : findSelectionTarget(rawWorld);
     if (!target) return;
+    if (shouldEnterGroupEdit(target)) {
+      onEnterGroupEdit?.(target.id);
+      return;
+    }
     applySelection(event, target, world);
   }
 
@@ -1155,6 +1226,11 @@ export default function CanvasView({
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      if (editingGroupId) {
+        onExitGroupEdit?.();
+        onResetTool?.();
+        return;
+      }
       if (selection.length > 0) {
         onSelect([]);
       }
@@ -1306,7 +1382,7 @@ export default function CanvasView({
 
   const renderedShapes = shapes
     .filter((shape) => isShapeVisible(shape))
-    .map((shape) => renderShape(shape, false));
+    .map((shape) => renderShape(shape, Boolean(editingGroupId && !shapeContainsId(shape, editingGroupId))));
 
   const renderedComponentLabels = componentInstances
     .filter((instance) => instance.pageId === pageId && instance.label.visible)
@@ -1540,24 +1616,51 @@ export default function CanvasView({
     if (shape.type === "group") {
       const bounds = getShapeBounds(shape);
       const visibleChildren = shape.children.filter((child) => isShapeVisible(child));
+      const isEditingThisGroup = editingGroupId === shape.id;
+      const containsEditingGroup = Boolean(editingGroupId && shapeContainsId(shape, editingGroupId));
       const groupHitProps = suppressPointer
         ? { pointerEvents: "none" as const }
-        : { onPointerDown: (event: ReactPointerEvent<SVGElement>) => handleShapePointerDown(event, shape) };
+        : {
+            onDoubleClick: (event: React.MouseEvent<SVGRectElement>) => {
+              if (tool !== "select" || editingGroupId) return;
+              event.preventDefault();
+              event.stopPropagation();
+              onEnterGroupEdit?.(shape.id);
+            },
+            onPointerDown: (event: ReactPointerEvent<SVGElement>) => handleShapePointerDown(event, shape)
+          };
       const groupHitPadding = selectionProximityPx / view.scale;
       const groupHitWidth = Math.max(1, bounds.maxX - bounds.minX);
       const groupHitHeight = Math.max(1, bounds.maxY - bounds.minY);
       return (
         <g key={shape.id}>
-          <rect
-            x={bounds.minX - groupHitPadding}
-            y={bounds.minY - groupHitPadding}
-            width={groupHitWidth + groupHitPadding * 2}
-            height={groupHitHeight + groupHitPadding * 2}
-            className="group-hit"
-            fill="rgba(0,0,0,0.001)"
-            {...groupHitProps}
-          />
-          {visibleChildren.map((child) => renderShape(child, true))}
+          {!isEditingThisGroup && (
+            <rect
+              x={bounds.minX - groupHitPadding}
+              y={bounds.minY - groupHitPadding}
+              width={groupHitWidth + groupHitPadding * 2}
+              height={groupHitHeight + groupHitPadding * 2}
+              className="group-hit"
+              fill="rgba(0,0,0,0.001)"
+              {...groupHitProps}
+            />
+          )}
+          {isEditingThisGroup && (
+            <rect
+              x={bounds.minX}
+              y={bounds.minY}
+              width={groupHitWidth}
+              height={groupHitHeight}
+              className="group-edit-bounds"
+              pointerEvents="none"
+            />
+          )}
+          {visibleChildren.map((child) =>
+            renderShape(
+              child,
+              isEditingThisGroup ? false : suppressPointer || !containsEditingGroup || !editingGroupId || !shapeContainsId(child, editingGroupId)
+            )
+          )}
         </g>
       );
     }
@@ -1844,6 +1947,8 @@ export default function CanvasView({
     }
     if (shape.type === "pin") {
       const cross = 1;
+      const pinHitWidth = Math.max((pinSelectionProximityPx * 2) / view.scale, shape.lineWidth);
+      const tagHitPadding = Math.min(pinTagSelectionProximityPx / view.scale, 0.25);
       const textWidth = shape.tag.length * (shape.tagFontSize * 0.6);
       const textHalfHeight = shape.tagFontSize / 2;
       const { strokeDasharray, strokeLinecap } = getLineStyleProps(shape.lineStyle);
@@ -1861,7 +1966,7 @@ export default function CanvasView({
             x2={shape.x + cross}
             y2={shape.y + cross}
             stroke="transparent"
-            strokeWidth={hitWidth}
+            strokeWidth={pinHitWidth}
             strokeLinecap="round"
             {...hitProps}
           />
@@ -1871,7 +1976,7 @@ export default function CanvasView({
             x2={shape.x + cross}
             y2={shape.y - cross}
             stroke="transparent"
-            strokeWidth={hitWidth}
+            strokeWidth={pinHitWidth}
             strokeLinecap="round"
             {...hitProps}
           />
@@ -1906,10 +2011,10 @@ export default function CanvasView({
             </>
           )}
           <rect
-            x={tagBounds.minX - hitWidth}
-            y={tagBounds.minY - hitWidth}
-            width={Math.max(1, tagBounds.maxX - tagBounds.minX) + hitWidth * 2}
-            height={Math.max(1, tagBounds.maxY - tagBounds.minY) + hitWidth * 2}
+            x={tagBounds.minX - tagHitPadding}
+            y={tagBounds.minY - tagHitPadding}
+            width={Math.max(1, tagBounds.maxX - tagBounds.minX) + tagHitPadding * 2}
+            height={Math.max(1, tagBounds.maxY - tagBounds.minY) + tagHitPadding * 2}
             fill="transparent"
             pointerEvents={suppressPointer ? "none" : "all"}
             onPointerDown={(event) => handlePinTagPointerDown(event, shape)}

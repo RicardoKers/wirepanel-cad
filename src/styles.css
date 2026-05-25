@@ -1184,6 +1184,13 @@ body {
   pointer-events: all;
 }
 
+.group-edit-bounds {
+  fill: rgba(61, 210, 255, 0.04);
+  stroke: rgba(61, 210, 255, 0.75);
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+}
+
 .shape.draft {
   stroke: #6ee7ff;
   stroke-dasharray: 6 4;

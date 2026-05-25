@@ -4,19 +4,22 @@ Browser-based 2D CAD for industrial electrical drawings, built with React, TypeS
 
 ## Overview
 
-WirePanel CAD is a lightweight web CAD focused on electrical schematics and panel drawings. It runs fully in the browser and stores project data as JSON files handled by the user.
+WirePanel CAD is a lightweight web CAD focused on electrical schematics and panel drawings. It runs fully in the browser and stores user project data in `.wpp` files handled by the user.
 
 Current highlights:
 
 - 2D drawing tools for lines, potentials, circles, arcs, text and pins
-- Selection, move, resize, group and ungroup workflows
+- Selection, move, resize, align, mirror, rotate, group and ungroup workflows
 - Layers with visibility, locking and active-layer editing
 - Grid, snap and pan/zoom navigation
 - Electrical potentials with numbering, names, wire size in `mm2` and renumbering
 - Pin snapping and automatic potential connections
 - Component system with:
-  - built-in app library from JSON files
-  - project components stored inside the project file
+  - built-in app library from `.wpm` model files
+  - project models imported/exported as `.wpm`
+  - project components stored inside the `.wpp` project file
+- Intelligent component instances with tag prefix/number, type, linked label and `Part of` relationships
+- Cross-reference addresses based on the sheet marker grid
 - PDF export with page settings and special text placeholders
 - English and Brazilian Portuguese interface
 - Built-in HTML help manual available from the app
@@ -45,7 +48,7 @@ wirepanel-cad/
     components/             React UI panels and canvas
     i18n/                   Language setup and translation resources
     library/
-      components/           Built-in component JSON files
+      components/           Built-in component source files
       index.ts              Built-in library loader
     utils/                  Geometry, text, markers and component helpers
     App.tsx                 Main application state and workflows
@@ -125,8 +128,10 @@ Notes:
 - Rotation in `15 deg` steps
 - Horizontal and vertical mirror
 - Alignment tools
-- Move by numeric offset
+- Selection context menu for delete, transform, align, group, ungroup, create component and move to layer
 - Group and ungroup selected shapes
+- Double-click a group or component body to edit its internal shapes without ungrouping it
+- `Esc` clears the current selection, cancels placement/dialog states and exits group edit mode
 
 ### Pages
 
@@ -153,6 +158,14 @@ Notes:
 - Same-number potentials connect when touched during draw or edit
 - Renumbering based on visual order
 
+### Pins
+
+- Pins define precise electrical connection points for potentials and reusable components
+- New pins use the default tag `X`
+- Pin tag text defaults to font size `2.5`
+- Pin tag text starts slightly to the right and below the connection point for readable terminal labels
+- The connection X marker is hidden by default and can be enabled in Project settings
+
 ### Text
 
 - Free text objects
@@ -171,22 +184,47 @@ Two component sources are supported:
 1. `App Library`
 2. `Project Components`
 
-`App Library` components are bundled with the application from JSON files located in [`src/library/components`](./src/library/components).
+`App Library` components are bundled with the application from source files located in [`src/library/components`](./src/library/components).
 
-`Project Components` are saved inside the project JSON file and travel with that project.
+`Project Components` are saved inside the project `.wpp` file and travel with that project.
+
+Project model files exported from the Library use the `.wpm` extension. Project files use `.wpp`.
 
 ## Component Workflow
 
-### Save a project component
+### Save a project model
 
 1. Draw one or more shapes on the canvas
 2. Select the desired shapes
-3. Click `Save to Project` in the components panel
+3. Use the `+` button in the Library header
 
-### Insert a component
+### Insert a model
 
-- Click a component and then click on the canvas
-- Or drag the component from the panel into the canvas
+- Click or drag a model from the Library onto the canvas
+- If the model includes a default tag prefix, insertion creates a new intelligent component instance
+- The new instance receives the next sequential number for that prefix
+
+### Intelligent components
+
+1. Draw a symbol
+2. Group the symbol
+3. Right-click the group and choose `Create component`
+4. Enter a tag prefix such as `K`, a type such as `Contactor`, and optionally a parent in `Part of`
+
+Component instances have an invisible `componentId`, a visible linked label, editable tag prefix/number, type, and optional parent relationship.
+
+The default component label appears to the left of the symbol, right-aligned and vertically centered. Subcomponents can show the parent address below the tag label.
+
+To adjust geometry inside a grouped symbol or component, double-click the group on the canvas. While the group is open for editing, its internal lines, texts and pins can be selected and edited from the Object panel. Press `Esc` to leave the group edit mode.
+
+### Parts and cross-references
+
+- A component can be marked as `Part of` another component
+- Parts inherit the parent tag prefix and number
+- Main components can show their parts above, below, left or right
+- Part spacing uses the real rotated/scaled symbol size
+- Component addresses are generated from page markers, for example `1.C2`
+- `Ctrl/Cmd + click` on component reference text jumps to the related component
 
 ### Add a built-in component to the app
 
@@ -194,16 +232,19 @@ The recommended workflow is:
 
 1. Draw the symbol in the CAD
 2. Save it as a project component
-3. Click `Download JSON`
-4. Save the generated `.json` file
+3. Click `Download WPM`
+4. Save the generated `.wpm` file
 5. Add that file to `src/library/components`
 6. Commit the file and rebuild the application
 
-This approach works well for collaboration because contributors can design components in the running app and send JSON files without needing direct access to the source code.
+This approach works well for collaboration because contributors can design components in the running app and send `.wpm` files without needing direct access to the source code.
 
-## Project File Format
+## File Formats
 
-The current project file format is strict and only accepts the current schema.
+User-facing files use distinct extensions:
+
+- `.wpp`: WirePanel Project, used by Download Project and Upload Project
+- `.wpm`: WirePanel Model, used by Library model import/export
 
 The main `CadFile` structure contains:
 
@@ -211,8 +252,9 @@ The main `CadFile` structure contains:
 - `layers`
 - `pages`
 - `components`
+- `componentInstances`
 
-Legacy compatibility was intentionally removed to keep import/export simpler and safer.
+The current project file format is strict and only accepts the current schema. Legacy compatibility was intentionally removed to keep import/export simpler and safer.
 
 ## Internationalization
 
@@ -242,7 +284,7 @@ They are exposed through the `Help` button in the top toolbar and follow the act
 - `Ctrl/Cmd + X`: cut
 - `Ctrl/Cmd + V`: paste
 - `Delete` or `Backspace`: delete selection
-- `Esc`: cancel current action or leave placement mode
+- `Esc`: clear selection, cancel current action, leave placement mode or exit group edit mode
 - `Arrow keys`: move selection by grid step or by 1 unit
 
 ## PDF Export
@@ -255,6 +297,8 @@ PDF export supports:
 - sheet size
 - orientation
 - margins
+- visible component labels
+- linked part references
 
 Settings are configured in the `Settings` tab and applied during export.
 
@@ -285,15 +329,15 @@ If the workflow build passes, GitHub Pages is updated automatically.
 ## Data and Storage Notes
 
 - The app runs fully on the client side
-- Project save/load is handled through browser file download/upload
+- Project save/load is handled through browser `.wpp` file download/upload
 - PDF export happens in the browser
 - Built-in components are distributed with the application bundle
-- Project components are stored in the project file itself
+- Project components and component instances are stored in the project file itself
 
 ## Known Notes
 
 - The production build currently shows a Vite chunk-size warning
-- The project is intended to use only the current JSON schema
+- The project is intended to use only the current `.wpp` schema
 - Comments, variable names and code structure are kept in English
 
 ## Repository
