@@ -73,6 +73,20 @@ type Bounds = {
   maxY: number;
 };
 
+type PdfShapeTransform = {
+  targetCenterX: number;
+  targetCenterY: number;
+  sourceCenterX: number;
+  sourceCenterY: number;
+  rotation: number;
+  scale: number;
+};
+
+type PdfLinkTarget = {
+  pageIndex: number;
+  bounds: Bounds;
+};
+
 function mergeBounds(a: Bounds, b: Bounds): Bounds {
   return {
     minX: Math.min(a.minX, b.minX),
@@ -98,6 +112,14 @@ function collectShapeIds(items: Shape[], shouldInclude: (shape: Shape) => boolea
     const ownId = shouldInclude(shape) ? [shape.id] : [];
     if (shape.type !== "group") return ownId;
     return [...ownId, ...collectShapeIds(shape.children, shouldInclude)];
+  });
+}
+
+function collectPinsFromShapes(items: Shape[]): Extract<Shape, { type: "pin" }>[] {
+  return items.flatMap((shape) => {
+    if (shape.type === "pin") return [shape];
+    if (shape.type === "group") return collectPinsFromShapes(shape.children);
+    return [];
   });
 }
 
@@ -128,6 +150,19 @@ function deleteSelectedShapes(items: Shape[], selection: Set<string>): Shape[] {
       if (shape.type !== "group") return shape;
       return { ...shape, children: deleteSelectedShapes(shape.children, selection) };
     });
+}
+
+function getRotatedScaledBoundsSize(bounds: Bounds, rotation: number, scale: number) {
+  const width = Math.max(1, bounds.maxX - bounds.minX) * scale;
+  const height = Math.max(1, bounds.maxY - bounds.minY) * scale;
+  const angle = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(angle));
+  const sin = Math.abs(Math.sin(angle));
+
+  return {
+    width: width * cos + height * sin,
+    height: width * sin + height * cos
+  };
 }
 
 type PotentialLinkTarget = {
@@ -660,14 +695,28 @@ export default function App() {
   const componentParentOptions = useMemo(
     () =>
       componentInstances
-        .map((instance) => ({
-          componentId: instance.componentId,
-          tag: `${instance.tagPrefix}${instance.tagNumber}`,
-          type: instance.type,
-          partOfId: instance.partOfId
-        }))
+        .map((instance) => {
+          const page = pages.find((item) => item.id === instance.pageId);
+          const linkedShapes = page
+            ? instance.shapeIds
+              .map((shapeId) => findShapeById(page.shapes, shapeId))
+              .filter((shape): shape is Shape => Boolean(shape))
+            : [];
+          return {
+            componentId: instance.componentId,
+            tag: `${instance.tagPrefix}${instance.tagNumber}`,
+            tagPrefix: instance.tagPrefix,
+            tagNumber: instance.tagNumber,
+            type: instance.type,
+            partOfId: instance.partOfId,
+            pins: collectPinsFromShapes(linkedShapes).map((pin) => ({
+              id: pin.id,
+              tag: pin.tag
+            }))
+          };
+        })
         .sort((a, b) => a.tag.localeCompare(b.tag, undefined, { numeric: true })),
-    [componentInstances]
+    [componentInstances, pages]
   );
   const isEditingGroup = Boolean(editingGroup);
   const canGroupSelection = !isEditingGroup && selection.length > 1;
@@ -1823,6 +1872,42 @@ export default function App() {
         typeof (value as ComponentInstance).parentLinkOffsetY === "number") &&
       (typeof (value as ComponentInstance).parentLinkRotation === "undefined" ||
         typeof (value as ComponentInstance).parentLinkRotation === "number") &&
+      (typeof (value as ComponentInstance).ioOfComponentId === "undefined" ||
+        typeof (value as ComponentInstance).ioOfComponentId === "string") &&
+      (typeof (value as ComponentInstance).ioOfPinId === "undefined" ||
+        typeof (value as ComponentInstance).ioOfPinId === "string") &&
+      (typeof (value as ComponentInstance).ioLinkOffsetX === "undefined" ||
+        typeof (value as ComponentInstance).ioLinkOffsetX === "number") &&
+      (typeof (value as ComponentInstance).ioLinkOffsetY === "undefined" ||
+        typeof (value as ComponentInstance).ioLinkOffsetY === "number") &&
+      (typeof (value as ComponentInstance).ioLinkRotation === "undefined" ||
+        typeof (value as ComponentInstance).ioLinkRotation === "number") &&
+      (typeof (value as ComponentInstance).ioLinkFontSize === "undefined" ||
+        typeof (value as ComponentInstance).ioLinkFontSize === "number") &&
+      (typeof (value as ComponentInstance).ioLinkAlign === "undefined" ||
+        ["left", "center", "right"].includes((value as ComponentInstance).ioLinkAlign ?? "")) &&
+      (typeof (value as ComponentInstance).ioPinLinkOffsetX === "undefined" ||
+        typeof (value as ComponentInstance).ioPinLinkOffsetX === "number") &&
+      (typeof (value as ComponentInstance).ioPinLinkOffsetY === "undefined" ||
+        typeof (value as ComponentInstance).ioPinLinkOffsetY === "number") &&
+      (typeof (value as ComponentInstance).ioPinLinkRotation === "undefined" ||
+        typeof (value as ComponentInstance).ioPinLinkRotation === "number") &&
+      (typeof (value as ComponentInstance).ioPinLinkFontSize === "undefined" ||
+        typeof (value as ComponentInstance).ioPinLinkFontSize === "number") &&
+      (typeof (value as ComponentInstance).ioPinLinkAlign === "undefined" ||
+        ["left", "center", "right"].includes((value as ComponentInstance).ioPinLinkAlign ?? "")) &&
+      (typeof (value as ComponentInstance).showIoPinTag === "undefined" ||
+        typeof (value as ComponentInstance).showIoPinTag === "boolean") &&
+      (typeof (value as ComponentInstance).ioPinTagOffsetX === "undefined" ||
+        typeof (value as ComponentInstance).ioPinTagOffsetX === "number") &&
+      (typeof (value as ComponentInstance).ioPinTagOffsetY === "undefined" ||
+        typeof (value as ComponentInstance).ioPinTagOffsetY === "number") &&
+      (typeof (value as ComponentInstance).ioPinTagRotation === "undefined" ||
+        typeof (value as ComponentInstance).ioPinTagRotation === "number") &&
+      (typeof (value as ComponentInstance).ioPinTagFontSize === "undefined" ||
+        typeof (value as ComponentInstance).ioPinTagFontSize === "number") &&
+      (typeof (value as ComponentInstance).ioPinTagAlign === "undefined" ||
+        ["left", "center", "right"].includes((value as ComponentInstance).ioPinTagAlign ?? "")) &&
       typeof (value as ComponentInstance).pageId === "string" &&
       Array.isArray((value as ComponentInstance).shapeIds) &&
       (value as ComponentInstance).shapeIds.every((shapeId) => typeof shapeId === "string") &&
@@ -1845,7 +1930,7 @@ export default function App() {
 
   function handleSaveJson() {
     const payload: CadFile = {
-      version: 4,
+      version: 5,
       layers,
       pages,
       components,
@@ -2025,9 +2110,20 @@ export default function App() {
 
   function removeComponentInstancesForShapeIds(shapeIds: string[]) {
     if (shapeIds.length === 0) return;
-    setComponentInstances((prev) =>
-      prev.filter((instance) => !instance.shapeIds.some((shapeId) => shapeIds.includes(shapeId)))
-    );
+    setComponentInstances((prev) => {
+      const removedIds = new Set(
+        prev
+          .filter((instance) => instance.shapeIds.some((shapeId) => shapeIds.includes(shapeId)))
+          .map((instance) => instance.componentId)
+      );
+      return prev
+        .filter((instance) => !removedIds.has(instance.componentId))
+        .map((instance) =>
+          instance.ioOfComponentId && removedIds.has(instance.ioOfComponentId)
+            ? { ...instance, ioOfComponentId: undefined, ioOfPinId: undefined }
+            : instance
+        );
+    });
   }
 
   function getNextComponentTagNumberFrom(prefix: string, sourceInstances: ComponentInstance[]) {
@@ -2080,11 +2176,29 @@ export default function App() {
 
   function normalizePartTags(instances: ComponentInstance[]) {
     return instances.map((instance) => {
-      if (!instance.partOfId) return instance;
+      const ioParent = instance.ioOfComponentId
+        ? instances.find((item) => item.componentId === instance.ioOfComponentId)
+        : null;
+      const ioParentExists = instance.ioOfComponentId
+        ? Boolean(ioParent)
+        : true;
+      const ioFields = ioParentExists
+        ? ioParent
+          ? {
+              tagPrefix: ioParent.tagPrefix,
+              tagNumber: ioParent.tagNumber
+            }
+          : {}
+        : {
+            ioOfComponentId: undefined,
+            ioOfPinId: undefined
+          };
+      if (!instance.partOfId) return { ...instance, ...ioFields };
       const parent = instances.find((item) => item.componentId === instance.partOfId);
-      if (!parent) return instance;
+      if (!parent) return { ...instance, ...ioFields };
       return {
         ...instance,
+        ...ioFields,
         tagPrefix: parent.tagPrefix,
         tagNumber: parent.tagNumber,
         partOfTag: `${parent.tagPrefix}${parent.tagNumber}`
@@ -2361,6 +2475,8 @@ export default function App() {
               partOfId: undefined,
               partOfTag: undefined,
               partOrder: undefined,
+              ioOfComponentId: undefined,
+              ioOfPinId: undefined,
               pageId: activePageId,
               shapeIds: nextShapeIds,
               label: { ...instance.label }
@@ -2609,6 +2725,113 @@ export default function App() {
       });
     };
 
+    const transformPoint = (point: Point, transform?: PdfShapeTransform): Point => {
+      if (!transform) return point;
+      const dx = (point.x - transform.sourceCenterX) * transform.scale;
+      const dy = (point.y - transform.sourceCenterY) * transform.scale;
+      const angle = (transform.rotation * Math.PI) / 180;
+      return {
+        x: transform.targetCenterX + dx * Math.cos(angle) - dy * Math.sin(angle),
+        y: transform.targetCenterY + dx * Math.sin(angle) + dy * Math.cos(angle)
+      };
+    };
+
+    const drawLinkedPdfText = (
+      text: string,
+      x: number,
+      y: number,
+      fontSizeMm: number,
+      align: "left" | "center" | "right" | undefined,
+      rotation: number | undefined,
+      target?: PdfLinkTarget
+    ) => {
+      if (!text) return;
+      pdf.setTextColor("#111827");
+      pdf.setFontSize(Math.max(1, fontSizeMm * mmToPt));
+      const resolvedAlign = align ?? "left";
+      const resolvedRotation = rotation ?? 0;
+      drawAnchoredPdfText(text, x, y, resolvedAlign, resolvedRotation);
+
+      if (!target) return;
+
+      const textWidth = pdf.getTextWidth(text);
+      const textHeight = Math.max(2.8, fontSizeMm * 1.35);
+      const alignOffset = resolvedAlign === "center" ? textWidth / 2 : resolvedAlign === "right" ? textWidth : 0;
+      const pdfAngle = -resolvedRotation;
+      const angleRad = (pdfAngle * Math.PI) / 180;
+      const dirX = Math.cos(angleRad);
+      const dirY = -Math.sin(angleRad);
+      const normX = -dirY;
+      const normY = dirX;
+      const startX = x - dirX * alignOffset;
+      const startY = y - dirY * alignOffset;
+      const halfHeight = textHeight / 2;
+      const corners = [
+        { x: startX + normX * halfHeight, y: startY + normY * halfHeight },
+        { x: startX - normX * halfHeight, y: startY - normY * halfHeight },
+        { x: startX + dirX * textWidth + normX * halfHeight, y: startY + dirY * textWidth + normY * halfHeight },
+        { x: startX + dirX * textWidth - normX * halfHeight, y: startY + dirY * textWidth - normY * halfHeight }
+      ];
+      const padding = 1.2;
+      const minX = Math.min(...corners.map((corner) => corner.x)) - padding;
+      const minY = Math.min(...corners.map((corner) => corner.y)) - padding;
+      const maxX = Math.max(...corners.map((corner) => corner.x)) + padding;
+      const maxY = Math.max(...corners.map((corner) => corner.y)) + padding;
+      pdf.link(mapX(minX), mapY(minY), Math.max(3, maxX - minX), Math.max(3, maxY - minY), {
+        pageNumber: target.pageIndex + 1,
+        top: Math.max(0, target.bounds.minY - 10),
+        left: Math.max(0, target.bounds.minX - 10),
+        zoom: "FitH"
+      });
+    };
+
+    const findPinById = (items: Shape[], id: string): Extract<Shape, { type: "pin" }> | null => {
+      for (const shape of items) {
+        if (shape.type === "pin" && shape.id === id) return shape;
+        if (shape.type === "group") {
+          const child = findPinById(shape.children, id);
+          if (child) return child;
+        }
+      }
+      return null;
+    };
+
+    const getPointAddress = (pageIndex: number, point: Point) => {
+      const cell = pointToMarker(point, layout);
+      return cell ? formatMarkerAddress(pageIndex, cell) : "";
+    };
+
+    const getPointBounds = (point: Point): Bounds => ({
+      minX: point.x - 5,
+      minY: point.y - 5,
+      maxX: point.x + 5,
+      maxY: point.y + 5
+    });
+
+    const getInstanceShapes = (instance: ComponentInstance) => {
+      const targetPageIndex = exportPages.findIndex((item) => item.id === instance.pageId);
+      const targetPage = exportPages[targetPageIndex];
+      if (!targetPage) return null;
+      const instanceShapes = instance.shapeIds
+        .map((shapeId) => findShapeById(targetPage.shapes, shapeId))
+        .filter((shape): shape is Shape => Boolean(shape));
+      if (instanceShapes.length === 0) return null;
+      const bounds = instanceShapes
+        .map((shape) => getShapeBounds(shape))
+        .reduce((acc, item) => mergeBounds(acc, item));
+      return { shapes: instanceShapes, bounds, page: targetPage, pageIndex: targetPageIndex };
+    };
+
+    const getInstanceAddress = (instance: ComponentInstance) => {
+      const item = getInstanceShapes(instance);
+      if (!item) return "";
+      const bounds = item.bounds;
+      return getPointAddress(item.pageIndex, {
+        x: (bounds.minX + bounds.maxX) / 2,
+        y: (bounds.minY + bounds.maxY) / 2
+      });
+    };
+
     const drawComponentLabels = (page: Page) => {
       componentInstances
         .filter((instance) => instance.pageId === page.id && instance.label.visible)
@@ -2657,6 +2880,90 @@ export default function App() {
           pdf.text(label, frameX + markerBandWidth / 2, y, { align: "center", baseline: "middle" });
         }
       }
+
+      const applyShapeStroke = (shape: Shape, scale = 1) => {
+        pdf.setDrawColor(shape.lineColor);
+        pdf.setLineWidth(Math.max(0.1, shape.lineWidth * scale * pxToMm));
+        if (shape.lineStyle === "dashed") {
+          setPdfLineDash([3, 2], 0);
+          pdf.setLineCap(0);
+        } else if (shape.lineStyle === "dotted") {
+          setPdfLineDash([0.5, 2], 0);
+          pdf.setLineCap(1);
+        } else {
+          setPdfLineDash([], 0);
+          pdf.setLineCap(0);
+        }
+      };
+
+      const drawTransformedShape = (shape: Shape, transform?: PdfShapeTransform) => {
+        if (shape.type === "group") {
+          shape.children.forEach((child) => drawTransformedShape(child, transform));
+          return;
+        }
+        if (!visibleLayers.has(shape.layerId)) return;
+        const scale = transform?.scale ?? 1;
+        applyShapeStroke(shape, scale);
+        if (shape.type === "line" || shape.type === "potential") {
+          const p1 = transformPoint({ x: shape.x1, y: shape.y1 }, transform);
+          const p2 = transformPoint({ x: shape.x2, y: shape.y2 }, transform);
+          pdf.line(mapX(p1.x), mapY(p1.y), mapX(p2.x), mapY(p2.y));
+        }
+        if (shape.type === "circle") {
+          const center = transformPoint({ x: shape.cx, y: shape.cy }, transform);
+          pdf.circle(mapX(center.x), mapY(center.y), shape.r * scale);
+        }
+        if (shape.type === "arc") {
+          const segments = 32;
+          const step = (shape.endAngle - shape.startAngle) / segments;
+          let previous = transformPoint(
+            {
+              x: shape.cx + Math.cos(shape.startAngle) * shape.r,
+              y: shape.cy + Math.sin(shape.startAngle) * shape.r
+            },
+            transform
+          );
+          for (let i = 1; i <= segments; i += 1) {
+            const angle = shape.startAngle + step * i;
+            const next = transformPoint(
+              {
+                x: shape.cx + Math.cos(angle) * shape.r,
+                y: shape.cy + Math.sin(angle) * shape.r
+              },
+              transform
+            );
+            pdf.line(mapX(previous.x), mapY(previous.y), mapX(next.x), mapY(next.y));
+            previous = next;
+          }
+        }
+        if (shape.type === "text") {
+          const position = transformPoint({ x: shape.x, y: shape.y }, transform);
+          pdf.setTextColor(shape.lineColor);
+          pdf.setFontSize(Math.max(1, shape.fontSize * scale * mmToPt));
+          const resolvedText = replacePlaceholders(shape.text, {
+            project: pdfSettings.project,
+            drawing: pdfSettings.drawing,
+            author: pdfSettings.author,
+            page: pageIndex + 1,
+            totalPages: exportPages.length
+          });
+          drawAnchoredPdfText(resolvedText, position.x, position.y, "left", transform?.rotation ?? 0);
+        }
+        if (shape.type === "pin") {
+          const pin = transformPoint({ x: shape.x, y: shape.y }, transform);
+          const tag = transformPoint({ x: shape.tagX, y: shape.tagY }, transform);
+          const cross = 1 * scale;
+          if (showPinConnection) {
+            pdf.line(mapX(pin.x - cross), mapY(pin.y - cross), mapX(pin.x + cross), mapY(pin.y + cross));
+            pdf.line(mapX(pin.x - cross), mapY(pin.y + cross), mapX(pin.x + cross), mapY(pin.y - cross));
+          }
+          pdf.setTextColor(shape.lineColor);
+          pdf.setFontSize(Math.max(1, shape.tagFontSize * scale * mmToPt));
+          drawAnchoredPdfText(shape.tag, tag.x, tag.y, "left", transform?.rotation ?? 0);
+        }
+        setPdfLineDash([], 0);
+        pdf.setLineCap(0);
+      };
 
       const drawShape = (shape: Shape) => {
         if (shape.type === "group") {
@@ -2817,7 +3124,168 @@ export default function App() {
         pdf.setLineCap(0);
       };
 
+      const drawComponentCrossReferences = () => {
+        const pageInstances = componentInstances.filter((instance) => instance.pageId === page.id);
+
+        pageInstances
+          .filter((instance) => instance.showParentLink && instance.partOfId)
+          .forEach((instance) => {
+            const linkedItem = getInstanceShapes(instance);
+            if (!linkedItem || !linkedItem.shapes.some((shape) => isShapeVisibleInPdf(shape))) return;
+            const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
+            const parentItem = parent ? getInstanceShapes(parent) : null;
+            const text = parent ? getInstanceAddress(parent) : "";
+            if (!text || !parentItem) return;
+            const bounds = linkedItem.bounds;
+            const centerX = (bounds.minX + bounds.maxX) / 2;
+            const centerY = (bounds.minY + bounds.maxY) / 2;
+            drawLinkedPdfText(
+              text,
+              centerX + (instance.parentLinkOffsetX ?? (bounds.minX - centerX - 2)),
+              centerY + (instance.parentLinkOffsetY ?? 4),
+              3.2,
+              "right",
+              instance.parentLinkRotation ?? 0,
+              { pageIndex: parentItem.pageIndex, bounds: parentItem.bounds }
+            );
+          });
+
+        pageInstances
+          .filter((parent) => parent.partsDisplay?.show)
+          .forEach((parent) => {
+            const parentItem = getInstanceShapes(parent);
+            const display = parent.partsDisplay;
+            if (!parentItem || !display || !parentItem.shapes.some((shape) => isShapeVisibleInPdf(shape))) return;
+            const parentBounds = parentItem.bounds;
+            const parts = componentInstances
+              .filter((instance) => instance.partOfId === parent.componentId)
+              .sort((a, b) => (a.partOrder ?? 0) - (b.partOrder ?? 0))
+              .map((part) => {
+                const partItem = getInstanceShapes(part);
+                if (!partItem || !partItem.shapes.some((shape) => isShapeVisibleInPdf(shape))) return null;
+                const scale = Math.max(0.1, display.scale);
+                const rotatedSize = getRotatedScaledBoundsSize(partItem.bounds, display.rotation, scale);
+                return { part, partItem, displayWidth: rotatedSize.width, displayHeight: rotatedSize.height };
+              })
+              .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+            const spacing = Math.max(0, display.spacing);
+            const startOffset = Math.max(0, display.offset ?? spacing);
+            const addressOffsetX = display.addressOffsetX ?? 6;
+            const addressOffsetY = display.addressOffsetY ?? 0;
+            const addressRotation = display.addressRotation ?? 0;
+            let horizontalOffset = 0;
+            let verticalOffset = 0;
+
+            parts.forEach(({ part, partItem, displayWidth, displayHeight }) => {
+              const scale = Math.max(0.1, display.scale);
+              const parentCenterX = (parentBounds.minX + parentBounds.maxX) / 2;
+              const parentCenterY = (parentBounds.minY + parentBounds.maxY) / 2;
+              let symbolCenterX = parentCenterX;
+              let symbolCenterY = parentBounds.maxY + startOffset + displayHeight / 2;
+
+              if (display.position === "right") {
+                symbolCenterX = parentBounds.maxX + startOffset + horizontalOffset + displayWidth / 2;
+                symbolCenterY = parentCenterY;
+                horizontalOffset += displayWidth + spacing;
+              }
+              if (display.position === "left") {
+                symbolCenterX = parentBounds.minX - startOffset - horizontalOffset - displayWidth / 2;
+                symbolCenterY = parentCenterY;
+                horizontalOffset += displayWidth + spacing;
+              }
+              if (display.position === "below") {
+                symbolCenterX = parentCenterX;
+                symbolCenterY = parentBounds.maxY + startOffset + verticalOffset + displayHeight / 2;
+                verticalOffset += displayHeight + spacing;
+              }
+              if (display.position === "above") {
+                symbolCenterX = parentCenterX;
+                symbolCenterY = parentBounds.minY - startOffset - verticalOffset - displayHeight / 2;
+                verticalOffset += displayHeight + spacing;
+              }
+
+              const partBounds = partItem.bounds;
+              const transform: PdfShapeTransform = {
+                targetCenterX: symbolCenterX,
+                targetCenterY: symbolCenterY,
+                sourceCenterX: (partBounds.minX + partBounds.maxX) / 2,
+                sourceCenterY: (partBounds.minY + partBounds.maxY) / 2,
+                rotation: display.rotation,
+                scale
+              };
+              partItem.shapes.forEach((shape) => drawTransformedShape(shape, transform));
+              const address = getInstanceAddress(part);
+              if (address) {
+                drawLinkedPdfText(
+                  address,
+                  symbolCenterX + addressOffsetX,
+                  symbolCenterY + addressOffsetY,
+                  3,
+                  "left",
+                  addressRotation,
+                  { pageIndex: partItem.pageIndex, bounds: partItem.bounds }
+                );
+              }
+            });
+          });
+
+        componentInstances
+          .filter((ioInstance) => ioInstance.ioOfComponentId && ioInstance.ioOfPinId)
+          .forEach((ioInstance) => {
+            const ioItem = getInstanceShapes(ioInstance);
+            const parent = componentInstances.find((instance) => instance.componentId === ioInstance.ioOfComponentId);
+            const parentItem = parent ? getInstanceShapes(parent) : null;
+            const pin = parentItem && ioInstance.ioOfPinId ? findPinById(parentItem.shapes, ioInstance.ioOfPinId) : null;
+            if (!ioItem || !parent || !parentItem || !pin) return;
+
+            const ioCenter = {
+              x: (ioItem.bounds.minX + ioItem.bounds.maxX) / 2,
+              y: (ioItem.bounds.minY + ioItem.bounds.maxY) / 2
+            };
+            const pinPoint = { x: pin.x, y: pin.y };
+            const ioAddress = getInstanceAddress(ioInstance);
+            const pinAddress = getPointAddress(parentItem.pageIndex, pinPoint);
+
+            if (ioInstance.pageId === page.id && pinAddress) {
+              drawLinkedPdfText(
+                pinAddress,
+                ioCenter.x + (ioInstance.ioLinkOffsetX ?? 6),
+                ioCenter.y + (ioInstance.ioLinkOffsetY ?? 0),
+                ioInstance.ioLinkFontSize ?? 3.2,
+                ioInstance.ioLinkAlign,
+                ioInstance.ioLinkRotation ?? 0,
+                { pageIndex: parentItem.pageIndex, bounds: getPointBounds(pinPoint) }
+              );
+            }
+
+            if (ioInstance.pageId === page.id && ioInstance.showIoPinTag && pin.tag) {
+              drawLinkedPdfText(
+                pin.tag,
+                ioCenter.x + (ioInstance.ioPinTagOffsetX ?? 6),
+                ioCenter.y + (ioInstance.ioPinTagOffsetY ?? -4),
+                ioInstance.ioPinTagFontSize ?? 3.2,
+                ioInstance.ioPinTagAlign,
+                ioInstance.ioPinTagRotation ?? 0
+              );
+            }
+
+            if (parent.pageId === page.id && ioAddress) {
+              drawLinkedPdfText(
+                ioAddress,
+                pin.x + (ioInstance.ioPinLinkOffsetX ?? 4),
+                pin.y + (ioInstance.ioPinLinkOffsetY ?? -3),
+                ioInstance.ioPinLinkFontSize ?? 3.2,
+                ioInstance.ioPinLinkAlign,
+                ioInstance.ioPinLinkRotation ?? 0,
+                { pageIndex: ioItem.pageIndex, bounds: ioItem.bounds }
+              );
+            }
+          });
+      };
+
       page.shapes.forEach((shape) => drawShape(shape));
+      drawComponentCrossReferences();
       drawComponentLabels(page);
       const junctions = collectPotentialJunctions(page.shapes);
       if (junctions.length > 0) {

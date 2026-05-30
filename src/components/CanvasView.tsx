@@ -1460,6 +1460,37 @@ export default function CanvasView({
     return cell ? formatMarkerAddress(item.pageIndex, cell) : "";
   }
 
+  function getPointAddress(pageIndex: number, point: Point) {
+    const cell = pointToMarker(point, markerLayout);
+    return cell ? formatMarkerAddress(pageIndex, cell) : "";
+  }
+
+  function getPointBounds(point: Point): Bounds {
+    return {
+      minX: point.x - 5,
+      minY: point.y - 5,
+      maxX: point.x + 5,
+      maxY: point.y + 5
+    };
+  }
+
+  function findPinByIdIn(items: Shape[], id: string): Extract<Shape, { type: "pin" }> | null {
+    for (const shape of items) {
+      if (shape.type === "pin" && shape.id === id) return shape;
+      if (shape.type === "group") {
+        const child = findPinByIdIn(shape.children, id);
+        if (child) return child;
+      }
+    }
+    return null;
+  }
+
+  function getTextAnchor(align?: "left" | "center" | "right") {
+    if (align === "center") return "middle";
+    if (align === "right") return "end";
+    return "start";
+  }
+
   function buildParentLinkText(instance: ComponentInstance) {
     if (!instance.partOfId) return "";
     const parent = componentInstances.find((item) => item.componentId === instance.partOfId);
@@ -1515,6 +1546,103 @@ export default function CanvasView({
           {text}
         </text>
       );
+    });
+
+  const renderedIoReferences = componentInstances
+    .filter((instance) => instance.ioOfComponentId && instance.ioOfPinId)
+    .flatMap((ioInstance) => {
+      const ioItem = getInstanceShapes(ioInstance);
+      const parent = componentInstances.find((instance) => instance.componentId === ioInstance.ioOfComponentId);
+      const parentItem = parent ? getInstanceShapes(parent) : null;
+      const pin = parentItem && ioInstance.ioOfPinId ? findPinByIdIn(parentItem.shapes, ioInstance.ioOfPinId) : null;
+      if (!ioItem || !parent || !parentItem || !pin) return [];
+
+      const ioCenter = {
+        x: (ioItem.bounds.minX + ioItem.bounds.maxX) / 2,
+        y: (ioItem.bounds.minY + ioItem.bounds.maxY) / 2
+      };
+      const pinPoint = { x: pin.x, y: pin.y };
+      const ioAddress = getInstanceAddress(ioInstance);
+      const pinAddress = getPointAddress(parentItem.pageIndex, pinPoint);
+      const pinBounds = getPointBounds(pinPoint);
+      const elements: React.ReactNode[] = [];
+
+      if (ioInstance.pageId === pageId && pinAddress) {
+        const textX = ioCenter.x + (ioInstance.ioLinkOffsetX ?? 6);
+        const textY = ioCenter.y + (ioInstance.ioLinkOffsetY ?? 0);
+        const rotation = ioInstance.ioLinkRotation ?? 0;
+        elements.push(
+          <text
+            key={`io-link-${ioInstance.componentId}`}
+            className="component-link-label"
+            x={textX}
+            y={textY}
+            fontSize={ioInstance.ioLinkFontSize ?? 3.2}
+            textAnchor={getTextAnchor(ioInstance.ioLinkAlign)}
+            dominantBaseline="middle"
+            pointerEvents="all"
+            transform={rotation ? `rotate(${rotation} ${textX} ${textY})` : undefined}
+            onPointerDown={(event) =>
+              handleComponentLinkPointerDown(event, {
+                pageIndex: parentItem.pageIndex,
+                bounds: pinBounds
+              })
+            }
+          >
+            {pinAddress}
+          </text>
+        );
+      }
+
+      if (ioInstance.pageId === pageId && ioInstance.showIoPinTag && pin.tag) {
+        const textX = ioCenter.x + (ioInstance.ioPinTagOffsetX ?? 6);
+        const textY = ioCenter.y + (ioInstance.ioPinTagOffsetY ?? -4);
+        const rotation = ioInstance.ioPinTagRotation ?? 0;
+        elements.push(
+          <text
+            key={`io-pin-tag-${ioInstance.componentId}`}
+            className="component-link-label"
+            x={textX}
+            y={textY}
+            fontSize={ioInstance.ioPinTagFontSize ?? 3.2}
+            textAnchor={getTextAnchor(ioInstance.ioPinTagAlign)}
+            dominantBaseline="middle"
+            pointerEvents="none"
+            transform={rotation ? `rotate(${rotation} ${textX} ${textY})` : undefined}
+          >
+            {pin.tag}
+          </text>
+        );
+      }
+
+      if (parent.pageId === pageId && ioAddress) {
+        const textX = pin.x + (ioInstance.ioPinLinkOffsetX ?? 4);
+        const textY = pin.y + (ioInstance.ioPinLinkOffsetY ?? -3);
+        const rotation = ioInstance.ioPinLinkRotation ?? 0;
+        elements.push(
+          <text
+            key={`io-pin-link-${ioInstance.componentId}`}
+            className="component-link-label"
+            x={textX}
+            y={textY}
+            fontSize={ioInstance.ioPinLinkFontSize ?? 3.2}
+            textAnchor={getTextAnchor(ioInstance.ioPinLinkAlign)}
+            dominantBaseline="middle"
+            pointerEvents="all"
+            transform={rotation ? `rotate(${rotation} ${textX} ${textY})` : undefined}
+            onPointerDown={(event) =>
+              handleComponentLinkPointerDown(event, {
+                pageIndex: ioItem.pageIndex,
+                bounds: ioItem.bounds
+              })
+            }
+          >
+            {ioAddress}
+          </text>
+        );
+      }
+
+      return elements;
     });
 
   const renderedPartReferences = componentInstances
@@ -2336,6 +2464,7 @@ export default function CanvasView({
           <g className="component-cross-references">
             {renderedPartReferences}
             {renderedParentLinks}
+            {renderedIoReferences}
           </g>
           <g className="component-labels" pointerEvents="none">
             {renderedComponentLabels}

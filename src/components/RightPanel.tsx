@@ -53,7 +53,11 @@ type ComponentInstanceListItem = {
 type ComponentParentOption = {
   componentId: string;
   tag: string;
+  tagPrefix: string;
+  tagNumber: number;
   type: string;
+  partOfId?: string;
+  pins: { id: string; tag: string }[];
 };
 type PotentialSharedChanges = {
   lineColor?: string;

@@ -207,7 +207,8 @@
             <h3>Inspetor Direito</h3>
             <p>
               O painel direito cont&eacute;m Objeto, Componentes, Potenciais, Camadas e Projeto. A se&ccedil;&atilde;o
-              Objeto &eacute; organizada em blocos de Componente, Etiqueta e Geometria.
+              Objeto &eacute; organizada em blocos de Componente, Etiqueta e Geometria. Campos de coordenada
+              e offset mostram valores arredondados para manter o painel leg&iacute;vel.
             </p>
           </div>
         </div>
@@ -350,6 +351,20 @@
           <li>As partes seguem a ordem de inser&ccedil;&atilde;o. Para mandar uma parte ao final, remova <strong>Parte de</strong> e adicione novamente.</li>
           <li>Use <code>Ctrl</code> + clique nos textos de refer&ecirc;ncia para navegar at&eacute; o componente ou parte relacionada.</li>
         </ul>
+        <h3>Refer&ecirc;ncias de IO</h3>
+        <p>
+          Um componente tamb&eacute;m pode ser marcado como <strong>IO de</strong> outro componente, sem usar
+          a rela&ccedil;&atilde;o <strong>Parte de</strong>. Isso atende entradas e sa&iacute;das distribu&iacute;das de CLPs
+          ou controladores.
+        </p>
+        <ul>
+          <li>Crie o componente principal, por exemplo um CLP, com pinos nomeados como <code>I0.0</code> ou <code>Q0.0</code>.</li>
+          <li>Crie o componente de IO em outro ponto do diagrama.</li>
+          <li>No painel Objeto, ative <strong>IO de</strong>, escolha o componente principal e depois o pino.</li>
+          <li>O IO mostra o endere&ccedil;o do pino principal; o pino principal mostra o endere&ccedil;o do IO.</li>
+          <li>Os dois textos possuem ajustes independentes de X/Y, rota&ccedil;&atilde;o, alinhamento e tamanho.</li>
+          <li><code>Ctrl</code> + clique nos textos navega para o alvo vinculado.</li>
+        </ul>
       </section>
 
       <section class="section" id="biblioteca">
@@ -391,7 +406,7 @@
         <ul>
           <li><strong>Baixar Projeto</strong>: salva folhas, camadas, formas, modelos do projeto e inst&acirc;ncias de componentes em um arquivo <code>.wpp</code>.</li>
           <li><strong>Carregar Projeto</strong>: abre um arquivo <code>.wpp</code> no formato atual da aplica&ccedil;&atilde;o.</li>
-          <li><strong>Exportar PDF</strong>: exporta o desenho usando as configura&ccedil;&otilde;es do Projeto, incluindo etiquetas vis&iacute;veis e refer&ecirc;ncias de partes.</li>
+          <li><strong>Exportar PDF</strong>: exporta o desenho usando as configura&ccedil;&otilde;es do Projeto, incluindo etiquetas vis&iacute;veis, refer&ecirc;ncias de partes, refer&ecirc;ncias de IO e links internos clic&aacute;veis nos textos de endere&ccedil;o.</li>
         </ul>
         <p>
           O formato atual do projeto &eacute; estrito. Arquivos antigos ou parciais fora da estrutura atual

@@ -94,9 +94,20 @@ Latest local changes ready to commit
   - New pin labels default to font size 2.5, are placed 0.8mm to the right and 0.2mm below the pin connection center, and use middle vertical alignment in canvas/PDF/bounds.
   - New component labels default to the left side of the component, right-aligned and vertically centered; subcomponent parent-address links default below that label, also right-aligned.
   - Default grid color is now `#dcdcdc` (RGB 220/220/220).
+- Numeric coordinate and offset fields in the Object properties panel now display rounded values with up to two decimal places, avoiding long floating-point residues in the UI.
 - Pressing Escape now clears the current selection; it still cancels placement/menus/dialogs as before.
 - Double-clicking a group/component body now enters group edit mode. Internal child shapes can be selected, moved with arrows/drag, and edited in Object properties without ungrouping. Pressing Escape exits group edit mode.
-  - Project downloads/imports now use `.wpp` (WirePanel Project) and project template/model downloads/imports now use `.wpm` (WirePanel Model); user-facing `.json` import support was removed to avoid confusion.
+- Project downloads/imports now use `.wpp` (WirePanel Project) and project template/model downloads/imports now use `.wpm` (WirePanel Model); user-facing `.json` import support was removed to avoid confusion.
+- Component instances now support a separate logical IO relationship, independent from `Part of`:
+  - `ioOfComponentId` and `ioOfPinId`.
+  - IO-side reference text X/Y/rotation/font size.
+  - Main-pin-side reference text X/Y/rotation/font size.
+  - The IO component shows the selected main pin address.
+  - The selected main pin shows the IO component address.
+  - Both texts support Ctrl+click navigation on the canvas.
+  - IO reference texts, IO pin-name text, parent links and generated part references are now included in PDF export.
+  - PDF-exported component parent links, generated part addresses and IO address references now include internal clickable links to the target page/region.
+  - Current project saves use format version `5`.
   - The left Library panel is 20px wider on desktop and medium layouts.
   - Displayed component parts now calculate spacing from the real rotated/scaled symbol bounds, so rotated part references keep correct distances.
   - Built-in component source files now use `.wpm` in `src/library/components`.
@@ -125,6 +136,7 @@ Important files
   - Selection, dragging, resizing, drawing tools, snapping, fit-to-page behavior.
   - Shape rendering for SVG canvas.
   - Group edit mode: double-click a group/component body to expose internal shapes for selection and property editing; Esc exits the mode.
+  - Canvas rendering for IO cross-reference texts between distributed IO components and pins on a main component.
 - src/components/ComponentsPanel.tsx
   - Left Library panel.
   - App templates and project templates.
@@ -135,6 +147,11 @@ Important files
 - src/components/PropertiesPanel.tsx
   - Shape property editing.
   - Selection actions such as delete, move, rotate, mirror and align.
+  - Component IO relationship controls:
+    - enable IO de / IO of.
+    - select target component.
+    - select target pin.
+    - adjust IO-side and pin-side reference text X/Y, rotation and size.
 - src/components/SettingsPanel.tsx
   - Language, PDF settings, grid and snapping settings.
 - src/components/PotentialsPanel.tsx
@@ -756,6 +773,20 @@ Testing policy for this work
   5. Select an internal text or pin and edit its value/position in Object properties.
   6. Press Escape and confirm selection returns to normal page-level behavior.
   7. Save as `.wpp`, reload, and confirm internal edits persisted.
+- IO reference manual test:
+  1. Draw a PLC-like symbol with at least two pins.
+  2. Group it and create a component, for example `PLC1` or `A1`.
+  3. Enter group edit mode and name pins such as `I0.0` and `Q0.0`.
+  4. Draw a separate IO symbol elsewhere, preferably on another page, group it and create an intelligent component.
+  5. Select the IO component, enable `IO de` / `IO of`.
+  6. Select the PLC/main component and then one of its pins.
+  7. Confirm the IO shows the address of the selected PLC pin.
+  8. Confirm the selected PLC pin shows the address of the IO component.
+  9. Adjust X/Y, rotation and size for both IO-side and pin-side texts.
+  10. Ctrl+click each reference and confirm navigation jumps to the linked target.
+  11. Save and reload the `.wpp`; confirm the IO relation and text settings persist.
+  12. Export PDF and confirm the IO reference texts and optional IO pin name appear with matching X/Y, rotation, alignment and size.
+  13. Open the exported PDF and click the IO address texts, parent-link texts and generated part addresses; confirm the PDF jumps to the linked page/region.
 
 Risks and implementation notes
 - Existing project import is intentionally strict. `componentInstances` is now required for the new format.

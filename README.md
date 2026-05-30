@@ -217,6 +217,8 @@ The default component label appears to the left of the symbol, right-aligned and
 
 To adjust geometry inside a grouped symbol or component, double-click the group on the canvas. While the group is open for editing, its internal lines, texts and pins can be selected and edited from the Object panel. Press `Esc` to leave the group edit mode.
 
+Coordinate and offset fields in the Object panel are displayed with compact rounded values, so small floating-point residues do not clutter the inspector while the drawing remains editable.
+
 ### Parts and cross-references
 
 - A component can be marked as `Part of` another component
@@ -225,6 +227,16 @@ To adjust geometry inside a grouped symbol or component, double-click the group 
 - Part spacing uses the real rotated/scaled symbol size
 - Component addresses are generated from page markers, for example `1.C2`
 - `Ctrl/Cmd + click` on component reference text jumps to the related component
+
+### IO references
+
+Components can also be marked as `IO of` another component without using the `Part of` relationship. This is intended for distributed PLC or controller inputs and outputs.
+
+1. Create the main component, such as a PLC, with named pins like `I0.0` or `Q0.0`.
+2. Create a separate IO component elsewhere in the diagram.
+3. In Object properties, enable `IO of`, choose the main component and then choose one of its pins.
+
+The IO component shows the address of the selected main pin. The selected pin on the main component shows the address of the IO component. Both reference texts have independent X/Y offset, rotation, alignment and size settings, and `Ctrl/Cmd + click` navigates to the linked target.
 
 ### Add a built-in component to the app
 
@@ -254,7 +266,7 @@ The main `CadFile` structure contains:
 - `components`
 - `componentInstances`
 
-The current project file format is strict and only accepts the current schema. Legacy compatibility was intentionally removed to keep import/export simpler and safer.
+The current project file format is strict and only accepts the current schema. Current saves use format version `5`. Legacy compatibility was intentionally removed to keep import/export simpler and safer.
 
 ## Internationalization
 
@@ -299,6 +311,8 @@ PDF export supports:
 - margins
 - visible component labels
 - linked part references
+- IO references and IO pin-name labels
+- internal clickable links on component, part and IO address references
 
 Settings are configured in the `Settings` tab and applied during export.
 

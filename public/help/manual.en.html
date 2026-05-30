@@ -205,7 +205,8 @@
             <h3>Right Inspector</h3>
             <p>
               The right panel contains Object, Components, Potentials, Layers and Project sections.
-              The Object section is organized into Component, Label and Geometry blocks.
+              The Object section is organized into Component, Label and Geometry blocks. Coordinate
+              and offset fields show rounded values to keep the inspector readable.
             </p>
           </div>
         </div>
@@ -349,6 +350,20 @@
           <li>Parts are ordered by insertion order. To move a part to the end, remove <strong>Part of</strong> and add it again.</li>
           <li>Use <code>Ctrl</code> + click on component reference text to jump to the related component or part.</li>
         </ul>
+        <h3>IO References</h3>
+        <p>
+          A component can also be marked as <strong>IO of</strong> another component without using the
+          <strong>Part of</strong> relationship. This is intended for distributed PLC or controller
+          inputs and outputs.
+        </p>
+        <ul>
+          <li>Create the main component, for example a PLC, with named pins such as <code>I0.0</code> or <code>Q0.0</code>.</li>
+          <li>Create the IO component elsewhere in the diagram.</li>
+          <li>In the Object panel, enable <strong>IO of</strong>, choose the main component and then choose the pin.</li>
+          <li>The IO shows the main pin address; the main pin shows the IO address.</li>
+          <li>Both texts have independent X/Y, rotation, alignment and size controls.</li>
+          <li><code>Ctrl</code> + click on either text navigates to the linked target.</li>
+        </ul>
       </section>
 
       <section class="section" id="library">
@@ -390,7 +405,7 @@
         <ul>
           <li><strong>Download Project</strong>: saves pages, layers, shapes, project templates and component instances to a <code>.wpp</code> file.</li>
           <li><strong>Upload Project</strong>: opens a <code>.wpp</code> file in the current application format.</li>
-          <li><strong>Export PDF</strong>: exports the drawing using Project settings, including visible component labels and linked part references.</li>
+          <li><strong>Export PDF</strong>: exports the drawing using Project settings, including visible component labels, linked part references, IO references and internal clickable links on address texts.</li>
         </ul>
         <p>
           The current project format is strict. Older or partial schemas outside the current structure

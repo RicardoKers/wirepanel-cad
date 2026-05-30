@@ -28,9 +28,17 @@ type PotentialSharedChanges = {
 type ComponentParentOption = {
   componentId: string;
   tag: string;
+  tagPrefix: string;
+  tagNumber: number;
   type: string;
   partOfId?: string;
+  pins: { id: string; tag: string }[];
 };
+
+function formatPanelNumber(value: number, decimals = 2) {
+  if (!Number.isFinite(value)) return "0";
+  return Number(value.toFixed(decimals)).toString();
+}
 
 export default function PropertiesPanel({
   selectedShape,
@@ -54,6 +62,9 @@ export default function PropertiesPanel({
   const selectedComponentTag = selectedComponentInstance
     ? `${selectedComponentInstance.tagPrefix}${selectedComponentInstance.tagNumber}`
     : "";
+  const selectedIoParent = selectedComponentInstance?.ioOfComponentId
+    ? componentParentOptions.find((option) => option.componentId === selectedComponentInstance.ioOfComponentId)
+    : null;
 
   function updateSelectedComponent(updater: (instance: ComponentInstance) => ComponentInstance) {
     if (!selectedComponentInstance) return;
@@ -74,6 +85,27 @@ export default function PropertiesPanel({
     };
   }
 
+  function getIoLinkDefaults(instance: ComponentInstance) {
+    return {
+      ioLinkOffsetX: instance.ioLinkOffsetX ?? 6,
+      ioLinkOffsetY: instance.ioLinkOffsetY ?? 0,
+      ioLinkRotation: instance.ioLinkRotation ?? 0,
+      ioLinkFontSize: instance.ioLinkFontSize ?? 3.2,
+      ioLinkAlign: instance.ioLinkAlign ?? "left",
+      ioPinLinkOffsetX: instance.ioPinLinkOffsetX ?? 4,
+      ioPinLinkOffsetY: instance.ioPinLinkOffsetY ?? -3,
+      ioPinLinkRotation: instance.ioPinLinkRotation ?? 0,
+      ioPinLinkFontSize: instance.ioPinLinkFontSize ?? 3.2,
+      ioPinLinkAlign: instance.ioPinLinkAlign ?? "left",
+      showIoPinTag: instance.showIoPinTag ?? false,
+      ioPinTagOffsetX: instance.ioPinTagOffsetX ?? 6,
+      ioPinTagOffsetY: instance.ioPinTagOffsetY ?? -4,
+      ioPinTagRotation: instance.ioPinTagRotation ?? 0,
+      ioPinTagFontSize: instance.ioPinTagFontSize ?? 3.2,
+      ioPinTagAlign: instance.ioPinTagAlign ?? "left"
+    };
+  }
+
   function updateLayer(shape: Shape, layerId: string): Shape {
     if (shape.type === "group") {
       return {
@@ -83,6 +115,19 @@ export default function PropertiesPanel({
       };
     }
     return { ...shape, layerId };
+  }
+
+  function renderAlignSelect(
+    value: "left" | "center" | "right" | undefined,
+    onChange: (align: "left" | "center" | "right") => void
+  ) {
+    return (
+      <select value={value ?? "left"} onChange={(event) => onChange(event.target.value as "left" | "center" | "right")}>
+        <option value="left">{t("properties.alignTextLeft")}</option>
+        <option value="center">{t("properties.alignTextCenter")}</option>
+        <option value="right">{t("properties.alignTextRight")}</option>
+      </select>
+    );
   }
 
   if (selectionCount === 0) {
@@ -165,9 +210,291 @@ export default function PropertiesPanel({
                     <option key={option.componentId} value={option.componentId}>
                       {option.tag}{option.type ? ` - ${option.type}` : ""}
                     </option>
-                  ))}
+                ))}
               </select>
             </label>
+            <label className="row">
+              {t("properties.ioOf")}
+              <input
+                type="checkbox"
+                checked={selectedComponentInstance.ioOfComponentId !== undefined}
+                onChange={(event) =>
+                  updateSelectedComponent((instance) => {
+                    if (!event.target.checked) {
+                      return {
+                        ...instance,
+                        ioOfComponentId: undefined,
+                        ioOfPinId: undefined
+                      };
+                    }
+                    const defaults = getIoLinkDefaults(instance);
+                    return {
+                      ...instance,
+                      ...defaults,
+                      ioOfComponentId: ""
+                    };
+                  })
+                }
+              />
+            </label>
+            {selectedComponentInstance.ioOfComponentId !== undefined && (
+              <>
+                <label className="row">
+                  {t("properties.ioComponent")}
+                  <select
+                    value={selectedComponentInstance.ioOfComponentId ?? ""}
+                    onChange={(event) => {
+                      const parent = componentParentOptions.find((option) => option.componentId === event.target.value);
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ...getIoLinkDefaults(instance),
+                        tagPrefix: parent?.tagPrefix ?? instance.tagPrefix,
+                        tagNumber: parent?.tagNumber ?? instance.tagNumber,
+                        ioOfComponentId: parent?.componentId,
+                        ioOfPinId: undefined
+                      }));
+                    }}
+                  >
+                    <option value="">{t("properties.noIoComponent")}</option>
+                    {componentParentOptions
+                      .filter((option) => option.componentId !== selectedComponentInstance.componentId)
+                      .map((option) => (
+                        <option key={option.componentId} value={option.componentId}>
+                          {option.tag}{option.type ? ` - ${option.type}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="row">
+                  {t("properties.ioPin")}
+                  <select
+                    value={selectedComponentInstance.ioOfPinId ?? ""}
+                    disabled={!selectedIoParent}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ...getIoLinkDefaults(instance),
+                        ioOfPinId: event.target.value || undefined
+                      }))
+                    }
+                  >
+                    <option value="">{t("properties.noIoPin")}</option>
+                    {selectedIoParent?.pins.map((pin) => (
+                      <option key={pin.id} value={pin.id}>
+                        {pin.tag || pin.id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="row">
+                  {t("properties.ioLinkOffsetX")}
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={formatPanelNumber(selectedComponentInstance.ioLinkOffsetX ?? 6)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioLinkOffsetX: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioLinkOffsetY")}
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={formatPanelNumber(selectedComponentInstance.ioLinkOffsetY ?? 0)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioLinkOffsetY: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioLinkRotation")}
+                  <input
+                    type="number"
+                    step={15}
+                    value={selectedComponentInstance.ioLinkRotation ?? 0}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioLinkRotation: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioLinkFontSize")}
+                  <input
+                    type="number"
+                    min={1}
+                    step={0.5}
+                    value={selectedComponentInstance.ioLinkFontSize ?? 3.2}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioLinkFontSize: Number(event.target.value) || 3.2
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioLinkAlign")}
+                  {renderAlignSelect(selectedComponentInstance.ioLinkAlign, (align) =>
+                    updateSelectedComponent((instance) => ({ ...instance, ioLinkAlign: align }))
+                  )}
+                </label>
+                <label className="row">
+                  {t("properties.showIoPinTag")}
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedComponentInstance.showIoPinTag)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ...getIoLinkDefaults(instance),
+                        showIoPinTag: event.target.checked
+                      }))
+                    }
+                  />
+                </label>
+                {selectedComponentInstance.showIoPinTag && (
+                  <>
+                    <label className="row">
+                      {t("properties.ioPinTagOffsetX")}
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={formatPanelNumber(selectedComponentInstance.ioPinTagOffsetX ?? 6)}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            ioPinTagOffsetX: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.ioPinTagOffsetY")}
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={formatPanelNumber(selectedComponentInstance.ioPinTagOffsetY ?? -4)}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            ioPinTagOffsetY: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.ioPinTagRotation")}
+                      <input
+                        type="number"
+                        step={15}
+                        value={selectedComponentInstance.ioPinTagRotation ?? 0}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            ioPinTagRotation: Number(event.target.value) || 0
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.ioPinTagFontSize")}
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.5}
+                        value={selectedComponentInstance.ioPinTagFontSize ?? 3.2}
+                        onChange={(event) =>
+                          updateSelectedComponent((instance) => ({
+                            ...instance,
+                            ioPinTagFontSize: Number(event.target.value) || 3.2
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="row">
+                      {t("properties.ioPinTagAlign")}
+                      {renderAlignSelect(selectedComponentInstance.ioPinTagAlign, (align) =>
+                        updateSelectedComponent((instance) => ({ ...instance, ioPinTagAlign: align }))
+                      )}
+                    </label>
+                  </>
+                )}
+                <label className="row">
+                  {t("properties.ioPinLinkOffsetX")}
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={formatPanelNumber(selectedComponentInstance.ioPinLinkOffsetX ?? 4)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioPinLinkOffsetX: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioPinLinkOffsetY")}
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={formatPanelNumber(selectedComponentInstance.ioPinLinkOffsetY ?? -3)}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioPinLinkOffsetY: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioPinLinkRotation")}
+                  <input
+                    type="number"
+                    step={15}
+                    value={selectedComponentInstance.ioPinLinkRotation ?? 0}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioPinLinkRotation: Number(event.target.value) || 0
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioPinLinkFontSize")}
+                  <input
+                    type="number"
+                    min={1}
+                    step={0.5}
+                    value={selectedComponentInstance.ioPinLinkFontSize ?? 3.2}
+                    onChange={(event) =>
+                      updateSelectedComponent((instance) => ({
+                        ...instance,
+                        ioPinLinkFontSize: Number(event.target.value) || 3.2
+                      }))
+                    }
+                  />
+                </label>
+                <label className="row">
+                  {t("properties.ioPinLinkAlign")}
+                  {renderAlignSelect(selectedComponentInstance.ioPinLinkAlign, (align) =>
+                    updateSelectedComponent((instance) => ({ ...instance, ioPinLinkAlign: align }))
+                  )}
+                </label>
+              </>
+            )}
             <label className="row">
               {t("properties.showParts")}
               <input
@@ -231,7 +558,7 @@ export default function PropertiesPanel({
                     type="number"
                     min={0}
                     step={1}
-                    value={selectedComponentInstance.partsDisplay.spacing}
+                    value={formatPanelNumber(selectedComponentInstance.partsDisplay.spacing)}
                     onChange={(event) =>
                       updateSelectedComponent((instance) => ({
                         ...instance,
@@ -250,7 +577,7 @@ export default function PropertiesPanel({
                     type="number"
                     min={0}
                     step={1}
-                    value={selectedComponentInstance.partsDisplay.offset ?? 5}
+                    value={formatPanelNumber(selectedComponentInstance.partsDisplay.offset ?? 5)}
                     onChange={(event) =>
                       updateSelectedComponent((instance) => ({
                         ...instance,
@@ -269,7 +596,7 @@ export default function PropertiesPanel({
                     type="number"
                     min={0.1}
                     step={0.1}
-                    value={selectedComponentInstance.partsDisplay.scale}
+                    value={formatPanelNumber(selectedComponentInstance.partsDisplay.scale)}
                     onChange={(event) =>
                       updateSelectedComponent((instance) => ({
                         ...instance,
@@ -287,7 +614,7 @@ export default function PropertiesPanel({
                   <input
                     type="number"
                     step={1}
-                    value={selectedComponentInstance.partsDisplay.addressOffsetX ?? 6}
+                    value={formatPanelNumber(selectedComponentInstance.partsDisplay.addressOffsetX ?? 6)}
                     onChange={(event) =>
                       updateSelectedComponent((instance) => ({
                         ...instance,
@@ -305,7 +632,7 @@ export default function PropertiesPanel({
                   <input
                     type="number"
                     step={1}
-                    value={selectedComponentInstance.partsDisplay.addressOffsetY ?? 0}
+                    value={formatPanelNumber(selectedComponentInstance.partsDisplay.addressOffsetY ?? 0)}
                     onChange={(event) =>
                       updateSelectedComponent((instance) => ({
                         ...instance,
@@ -363,7 +690,7 @@ export default function PropertiesPanel({
                       <input
                         type="number"
                         step={0.5}
-                        value={selectedComponentInstance.parentLinkOffsetX ?? -6}
+                        value={formatPanelNumber(selectedComponentInstance.parentLinkOffsetX ?? -6)}
                         onChange={(event) =>
                           updateSelectedComponent((instance) => ({
                             ...instance,
@@ -377,7 +704,7 @@ export default function PropertiesPanel({
                       <input
                         type="number"
                         step={0.5}
-                        value={selectedComponentInstance.parentLinkOffsetY ?? 4}
+                        value={formatPanelNumber(selectedComponentInstance.parentLinkOffsetY ?? 4)}
                         onChange={(event) =>
                           updateSelectedComponent((instance) => ({
                             ...instance,
@@ -426,7 +753,7 @@ export default function PropertiesPanel({
               {t("properties.labelOffsetX")}
               <input
                 type="number"
-                value={selectedComponentInstance.label.offsetX}
+                value={formatPanelNumber(selectedComponentInstance.label.offsetX)}
                 onChange={(event) =>
                   updateSelectedComponent((instance) => ({
                     ...instance,
@@ -439,7 +766,7 @@ export default function PropertiesPanel({
               {t("properties.labelOffsetY")}
               <input
                 type="number"
-                value={selectedComponentInstance.label.offsetY}
+                value={formatPanelNumber(selectedComponentInstance.label.offsetY)}
                 onChange={(event) =>
                   updateSelectedComponent((instance) => ({
                     ...instance,
@@ -618,42 +945,42 @@ export default function PropertiesPanel({
             )}
             {(selectedShape.type === "line" || selectedShape.type === "potential") && (
               <>
-                <label className="row">{t("properties.x1")}<input type="number" value={selectedShape.x1} onChange={(event) =>
+                <label className="row">{t("properties.x1")}<input type="number" value={formatPanelNumber(selectedShape.x1)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x1: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.y1")}<input type="number" value={selectedShape.y1} onChange={(event) =>
+                <label className="row">{t("properties.y1")}<input type="number" value={formatPanelNumber(selectedShape.y1)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y1: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.x2")}<input type="number" value={selectedShape.x2} onChange={(event) =>
+                <label className="row">{t("properties.x2")}<input type="number" value={formatPanelNumber(selectedShape.x2)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x2: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.y2")}<input type="number" value={selectedShape.y2} onChange={(event) =>
+                <label className="row">{t("properties.y2")}<input type="number" value={formatPanelNumber(selectedShape.y2)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y2: Number(event.target.value) }))
                 } /></label>
               </>
             )}
             {selectedShape.type === "circle" && (
               <>
-                <label className="row">{t("properties.cx")}<input type="number" value={selectedShape.cx} onChange={(event) =>
+                <label className="row">{t("properties.cx")}<input type="number" value={formatPanelNumber(selectedShape.cx)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cx: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.cy")}<input type="number" value={selectedShape.cy} onChange={(event) =>
+                <label className="row">{t("properties.cy")}<input type="number" value={formatPanelNumber(selectedShape.cy)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cy: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.r")}<input type="number" value={selectedShape.r} onChange={(event) =>
+                <label className="row">{t("properties.r")}<input type="number" value={formatPanelNumber(selectedShape.r)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, r: Number(event.target.value) }))
                 } /></label>
               </>
             )}
             {selectedShape.type === "arc" && (
               <>
-                <label className="row">{t("properties.cx")}<input type="number" value={selectedShape.cx} onChange={(event) =>
+                <label className="row">{t("properties.cx")}<input type="number" value={formatPanelNumber(selectedShape.cx)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cx: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.cy")}<input type="number" value={selectedShape.cy} onChange={(event) =>
+                <label className="row">{t("properties.cy")}<input type="number" value={formatPanelNumber(selectedShape.cy)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, cy: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.r")}<input type="number" value={selectedShape.r} onChange={(event) =>
+                <label className="row">{t("properties.r")}<input type="number" value={formatPanelNumber(selectedShape.r)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, r: Number(event.target.value) }))
                 } /></label>
                 <label className="row">{t("properties.start")}<input type="number" value={selectedShape.startAngle} onChange={(event) =>
@@ -666,10 +993,10 @@ export default function PropertiesPanel({
             )}
             {selectedShape.type === "text" && (
               <>
-                <label className="row">{t("properties.x")}<input type="number" value={selectedShape.x} onChange={(event) =>
+                <label className="row">{t("properties.x")}<input type="number" value={formatPanelNumber(selectedShape.x)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.y")}<input type="number" value={selectedShape.y} onChange={(event) =>
+                <label className="row">{t("properties.y")}<input type="number" value={formatPanelNumber(selectedShape.y)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y: Number(event.target.value) }))
                 } /></label>
                 <label className="row">{t("properties.text")}<input type="text" value={selectedShape.text} onChange={(event) =>
@@ -702,19 +1029,19 @@ export default function PropertiesPanel({
             )}
             {selectedShape.type === "pin" && (
               <>
-                <label className="row">{t("properties.pinX")}<input type="number" value={selectedShape.x} onChange={(event) =>
+                <label className="row">{t("properties.pinX")}<input type="number" value={formatPanelNumber(selectedShape.x)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, x: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.pinY")}<input type="number" value={selectedShape.y} onChange={(event) =>
+                <label className="row">{t("properties.pinY")}<input type="number" value={formatPanelNumber(selectedShape.y)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, y: Number(event.target.value) }))
                 } /></label>
                 <label className="row">{t("properties.tag")}<input type="text" value={selectedShape.tag} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tag: event.target.value }))
                 } /></label>
-                <label className="row">{t("properties.tagX")}<input type="number" value={selectedShape.tagX} onChange={(event) =>
+                <label className="row">{t("properties.tagX")}<input type="number" value={formatPanelNumber(selectedShape.tagX)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagX: Number(event.target.value) }))
                 } /></label>
-                <label className="row">{t("properties.tagY")}<input type="number" value={selectedShape.tagY} onChange={(event) =>
+                <label className="row">{t("properties.tagY")}<input type="number" value={formatPanelNumber(selectedShape.tagY)} onChange={(event) =>
                   onUpdateShape(selectedShape.id, (shape) => ({ ...shape, tagY: Number(event.target.value) }))
                 } /></label>
                 <label className="row">{t("properties.tagSize")}<input type="number" value={selectedShape.tagFontSize} onChange={(event) =>
@@ -730,7 +1057,7 @@ export default function PropertiesPanel({
               {t("properties.originX")}
               <input
                 type="number"
-                value={groupOrigin.minX}
+                value={formatPanelNumber(groupOrigin.minX)}
                 onChange={(event) => {
                   const nextX = Number(event.target.value);
                   if (Number.isNaN(nextX)) return;
@@ -744,7 +1071,7 @@ export default function PropertiesPanel({
               {t("properties.originY")}
               <input
                 type="number"
-                value={groupOrigin.minY}
+                value={formatPanelNumber(groupOrigin.minY)}
                 onChange={(event) => {
                   const nextY = Number(event.target.value);
                   if (Number.isNaN(nextY)) return;
